@@ -417,30 +417,6 @@ Before deploying to hardware, verify in simulation:
 
 ## Advanced Simulation Techniques
 
-### Virtual Terminal
-
-Add a virtual terminal to monitor debug output:
-
-<Steps>
-  <Step title="Add UART Terminal">
-    1. Place a **COMPIM** component
-    2. Connect to PIC UART pins (RC6/TX, RC7/RX)
-    3. Configure for 9600 baud
-  </Step>
-  
-  <Step title="Add Debug Output to Code">
-    ```c
-    #use rs232(baud=9600, xmit=PIN_C6, rcv=PIN_C7)
-    
-    printf("Menu choice: %d\r\n", val);
-    ```
-  </Step>
-  
-  <Step title="Run and Monitor">
-    Debug messages appear in the virtual terminal window.
-  </Step>
-</Steps>
-
 ### Logic Analyzer
 
 Monitor port activity:
