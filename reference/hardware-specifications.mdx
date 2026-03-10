@@ -1,0 +1,300 @@
+---
+title: 'Hardware Specifications'
+description: 'Detailed hardware specifications and requirements for the Number Base Converter system'
+icon: 'microchip'
+---
+
+## Microcontroller Specifications
+
+The Number Base Converter is built on the **PIC18F4550** microcontroller, a powerful 8-bit MCU from Microchip Technology.
+
+<ParamField path="Microcontroller" type="PIC18F4550">
+  High-performance 8-bit microcontroller with USB capability
+</ParamField>
+
+<ParamField path="Clock Frequency" type="8 MHz">
+  System clock configured at 8 MHz for optimal performance
+  
+  ```c
+  #use delay(clock=8Mhz)
+  ```
+</ParamField>
+
+<Expandable title="PIC18F4550 Key Features">
+  <ParamField path="Architecture" type="8-bit RISC">
+    Enhanced mid-range core with C compiler optimized instruction set
+  </ParamField>
+  
+  <ParamField path="Program Memory" type="32KB Flash">
+    Sufficient for application code and conversion algorithms
+  </ParamField>
+  
+  <ParamField path="Data Memory" type="2048 bytes RAM">
+    Adequate for string buffers and conversion operations
+  </ParamField>
+  
+  <ParamField path="EEPROM" type="256 bytes">
+    Non-volatile storage (not utilized in current implementation)
+  </ParamField>
+  
+  <ParamField path="I/O Ports" type="5 ports (A-E)">
+    35 I/O pins available, with PORTB dedicated to keypad interface
+  </ParamField>
+  
+  <ParamField path="Operating Voltage" type="4.2V - 5.5V">
+    Standard 5V operation for compatibility with peripherals
+  </ParamField>
+</Expandable>
+
+---
+
+## Display Specifications
+
+### HDM64GS12 Graphic LCD
+
+The system uses the **HDM64GS12** graphic LCD module for visual output.
+
+<ParamField path="Model" type="HDM64GS12">
+  Monochrome graphic LCD with built-in controller
+</ParamField>
+
+<ParamField path="Resolution" type="128×64 pixels">
+  Sufficient for displaying multiple lines of conversion results
+</ParamField>
+
+<ParamField path="Display Type" type="STN/FSTN">
+  Super-twisted nematic for improved contrast and viewing angle
+</ParamField>
+
+<ParamField path="Controller" type="KS0108/KS0107">
+  Industry-standard graphic LCD controller
+</ParamField>
+
+<ParamField path="Interface" type="Parallel 8-bit">
+  Connected to PIC18F4550 data bus for fast updates
+</ParamField>
+
+<ParamField path="Text Capability" type="5×7 font">
+  Character display using `glcd_text57()` function from graphics library
+</ParamField>
+
+```c
+#include <hdm64gs12.c>  // LCD driver library
+#include <graphics.c>    // Graphics functions
+```
+
+<Note>
+  The LCD library provides functions for text rendering, screen clearing, and pixel manipulation required for the converter interface.
+</Note>
+
+---
+
+## Keypad Specifications
+
+### 4×4 Matrix Keypad
+
+<ParamField path="Configuration" type="4×4 Matrix">
+  16-key keypad arranged in 4 rows and 4 columns
+</ParamField>
+
+<ParamField path="Key Layout" type="Standard numeric + hex">
+  Keys: 0-9, A-D, *, #
+</ParamField>
+
+<ParamField path="Interface Method" type="Matrix scanning">
+  Column-driven, row-sensed scanning pattern
+</ParamField>
+
+<ParamField path="Debounce Factor" type="33">
+  Software debounce implementation with call count threshold
+  
+  ```c
+  #define KBD_DEBOUNCE_FACTOR 33
+  ```
+</ParamField>
+
+<Expandable title="Keypad Key Mapping">
+  The keypad follows this standard layout:
+  
+  ```c
+  char const KEYS[4][4] = {{'1','2','3','A'},
+                           {'4','5','6','B'},
+                           {'7','8','9','C'},
+                           {'*','0','#','D'}};
+  ```
+  
+  | Row/Col | Column 0 | Column 1 | Column 2 | Column 3 |
+  |---------|----------|----------|----------|----------|
+  | Row 0   | 1        | 2        | 3        | A        |
+  | Row 1   | 4        | 5        | 6        | B        |
+  | Row 2   | 7        | 8        | 9        | C        |
+  | Row 3   | *        | 0        | #        | D        |
+</Expandable>
+
+---
+
+## Port Configuration
+
+### PORTB - Keypad Interface
+
+The keypad is connected to **PORTB** of the PIC18F4550.
+
+```c
+#define use_portb_kbd TRUE
+#include <kbd4x4.c>
+```
+
+<ParamField path="Port" type="PORTB">
+  8-bit bidirectional I/O port with weak pull-ups
+</ParamField>
+
+<ParamField path="Direction Control" type="TRISB register">
+  Dynamically configured during column scanning
+</ParamField>
+
+<ParamField path="Pull-up Resistors" type="Required">
+  Internal or external pull-ups needed on column pins
+</ParamField>
+
+### Pin Assignments (Black Keypad Configuration)
+
+<ParamField path="RB0" type="ROW0">
+  Keypad row 0 input line
+</ParamField>
+
+<ParamField path="RB1" type="ROW1">
+  Keypad row 1 input line
+</ParamField>
+
+<ParamField path="RB2" type="ROW2">
+  Keypad row 2 input line
+</ParamField>
+
+<ParamField path="RB3" type="ROW3">
+  Keypad row 3 input line
+</ParamField>
+
+<ParamField path="RB4" type="COL0">
+  Keypad column 0 output line
+</ParamField>
+
+<ParamField path="RB5" type="COL1">
+  Keypad column 1 output line
+</ParamField>
+
+<ParamField path="RB6" type="COL2">
+  Keypad column 2 output line
+</ParamField>
+
+<ParamField path="RB7" type="COL3">
+  Keypad column 3 output line
+</ParamField>
+
+```c
+#define COL0 (1 << 4)  // RB4
+#define COL1 (1 << 5)  // RB5
+#define COL2 (1 << 6)  // RB6
+#define COL3 (1 << 7)  // RB7
+
+#define ROW0 (1 << 0)  // RB0
+#define ROW1 (1 << 1)  // RB1
+#define ROW2 (1 << 2)  // RB2
+#define ROW3 (1 << 3)  // RB3
+```
+
+<Note>
+  The driver also supports an alternative blue keypad configuration with different pin mappings (COL0=RB2, COL1=RB3, COL2=RB6, ROW0=RB4, ROW1=RB7, ROW2=RB1, ROW3=RB5).
+</Note>
+
+---
+
+## Memory Requirements
+
+### Program Memory Usage
+
+<ParamField path="Core Application" type="~2-4 KB">
+  Main conversion logic and menu system
+</ParamField>
+
+<ParamField path="LCD Graphics Library" type="~4-6 KB">
+  HDM64GS12 driver and graphics functions
+</ParamField>
+
+<ParamField path="Keypad Driver" type="~1 KB">
+  Matrix keypad scanning routines
+</ParamField>
+
+<ParamField path="Total Estimated" type="~8-12 KB">
+  Leaves ample space for future enhancements within 32KB flash
+</ParamField>
+
+### Data Memory Usage
+
+<ParamField path="String Buffers" type="~80 bytes">
+  Multiple 20-character arrays for input/output
+  
+  ```c
+  char prueba[20];
+  char num[20] = "";
+  char input[20], bin[20], oct[20], hex[20], gray[20];
+  ```
+</ParamField>
+
+<ParamField path="Menu Strings" type="~120 bytes">
+  Text labels for menu options
+  
+  ```c
+  char textTitle[40] = "Menu de Conversiones";
+  char textDec[40] = "1 Dec a Bin-Oct-Hex";
+  char textBin[40] = "2 Bin a Gray";
+  char textGray[40] = "3 Gray a Bin";
+  ```
+</ParamField>
+
+<ParamField path="Working Variables" type="~20 bytes">
+  Integer counters, indices, and temporary values
+</ParamField>
+
+<ParamField path="Total Data RAM" type="~220-250 bytes">
+  Efficient usage well within 2KB RAM limit
+</ParamField>
+
+---
+
+## Power Requirements
+
+<ParamField path="Operating Voltage" type="5V DC">
+  Standard regulated 5V supply required
+</ParamField>
+
+<ParamField path="PIC18F4550 Current" type="~20-30 mA">
+  Active mode at 8 MHz clock frequency
+</ParamField>
+
+<ParamField path="LCD Backlight" type="~50-100 mA">
+  Varies based on LED backlight configuration
+</ParamField>
+
+<ParamField path="Total System Current" type="~100-150 mA">
+  Conservative estimate including all peripherals
+</ParamField>
+
+<Note>
+  A regulated 5V power supply capable of delivering at least 200mA is recommended for reliable operation with margin.
+</Note>
+
+---
+
+## Environmental Specifications
+
+<ParamField path="Operating Temperature" type="0°C to +70°C">
+  Standard industrial temperature range
+</ParamField>
+
+<ParamField path="Storage Temperature" type="-40°C to +85°C">
+  Based on PIC18F4550 specifications
+</ParamField>
+
+<ParamField path="Humidity" type="Non-condensing">
+  Avoid moisture exposure to prevent LCD and PCB damage
+</ParamField>

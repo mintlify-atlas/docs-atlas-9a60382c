@@ -1,0 +1,471 @@
+---
+title: 'Proteus Simulation'
+description: 'Test the Number Base Converter in Proteus ISIS without physical hardware'
+icon: 'microchip'
+---
+
+## Overview
+
+Proteus Design Suite allows you to simulate the complete Number Base Converter circuit before building hardware. This guide covers loading the project, running simulations, and testing all conversion functions.
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="Proteus Software" icon="computer">
+    Proteus 8.x or later with ISIS and ARES
+  </Card>
+  <Card title="Compiled HEX" icon="file-code">
+    `Prueba Ccs.hex` from successful build
+  </Card>
+</CardGroup>
+
+## Opening the Proteus Project
+
+<Steps>
+  <Step title="Launch Proteus ISIS">
+    Start Proteus Design Suite and select **ISIS Schematic Capture**.
+  </Step>
+  
+  <Step title="Open Project File">
+    Navigate to **File → Open Project** and select:
+    ```
+    Proy SD.pdsprj
+    ```
+    The complete schematic will load with all components placed.
+  </Step>
+  
+  <Step title="Verify Component Placement">
+    The schematic includes:
+    - **PIC18F4550** microcontroller (U1)
+    - **HDM64GS12** 128x64 graphical LCD module
+    - **4x4 Matrix Keypad** (16 buttons)
+    - **8 MHz Crystal** oscillator
+    - **Power supply** connections (VDD/VSS)
+    - **Pull-up resistors** on keypad columns (Port B)
+  </Step>
+</Steps>
+
+## Circuit Components
+
+### PIC18F4550 Connections
+
+| Port | Connection | Purpose |
+|------|------------|----------|
+| **Port B** (RB0-RB7) | 4x4 Keypad | Rows (RB0-RB3) and Columns (RB4-RB7) |
+| **Port D** (RD0-RD7) | LCD Data | 8-bit parallel data to LCD |
+| **Port E** | LCD Control | RS, R/W, E, CS1, CS2, RST signals |
+| **OSC1/OSC2** | Crystal | 8 MHz external oscillator |
+| **MCLR** | Reset | Pull-up to VDD with reset button |
+
+<Warning>
+  The keypad MUST be connected to Port B with pull-up resistors on the column pins (RB4-RB7). The firmware defines `use_portb_kbd TRUE` in the source code.
+</Warning>
+
+### Keypad Layout
+
+The 4x4 keypad is mapped as follows:
+
+```c kbd4x4.c:82-85
+{'1','2','3','A'},
+{'4','5','6','B'},
+{'7','8','9','C'},
+{'*','0','#','D'}
+```
+
+<Info>
+  **Key Usage**: 
+  - Number keys (0-9) for input
+  - `#` terminates input entry
+  - `1`, `2`, `3` select menu options
+  - `A`, `B`, `C`, `D` are available for future features
+</Info>
+
+## Loading the HEX File
+
+<Steps>
+  <Step title="Select the Microcontroller">
+    Double-click the **PIC18F4550** component in the schematic (or right-click → Edit Properties).
+  </Step>
+  
+  <Step title="Load Program File">
+    In the component properties:
+    1. Click the folder icon next to **Program File**
+    2. Browse to `Prueba Ccs.hex`
+    3. Click **Open**
+    
+    The path should now show:
+    ```
+    Program File: Prueba Ccs.hex
+    ```
+  </Step>
+  
+  <Step title="Set Clock Frequency">
+    Verify the **Processor Clock Frequency** is set to:
+    ```
+    8.000000 MHz
+    ```
+    This must match the `#use delay(clock=8Mhz)` directive in the code.
+  </Step>
+  
+  <Step title="Apply Changes">
+    Click **OK** to save the configuration.
+  </Step>
+</Steps>
+
+<Tip>
+  If the HEX file path shows as relative, it will load from the same directory as the `.pdsprj` file. Use absolute paths if you move files to different locations.
+</Tip>
+
+## Running the Simulation
+
+<Steps>
+  <Step title="Start Simulation">
+    Click the **Play** button (▶) at the bottom left, or press **F12**.
+    
+    The simulation will start, and you should see:
+    - LCD initializes (brief flash)
+    - Main menu appears on LCD display
+  </Step>
+  
+  <Step title="Verify Main Menu Display">
+    The LCD should show:
+    ```plaintext
+    Menu de Conversiones
+    
+    1 Dec a Bin-Oct-Hex
+    
+    2 Bin a Gray
+    
+    3 Gray a Bin
+    ```
+  </Step>
+  
+  <Step title="Interact with Keypad">
+    Click on keypad buttons in the schematic to simulate key presses.
+    - Press `1`, `2`, or `3` to select a conversion mode
+    - The LCD will update to show the selected function
+  </Step>
+</Steps>
+
+## Testing Conversion Functions
+
+<Tabs>
+  <Tab title="Decimal to Binary/Octal/Hex">
+    <Steps>
+      <Step title="Select Function">
+        Press **1** on the keypad to enter decimal conversion mode.
+        
+        LCD displays:
+        ```
+        1 Dec a Bin-Oct-Hex
+        Ingrese Decimal:
+        ```
+      </Step>
+      
+      <Step title="Enter Decimal Number">
+        Type a decimal number using keypad digits, for example: `255`
+        
+        Each digit appears on the LCD as you type.
+      </Step>
+      
+      <Step title="Confirm Input">
+        Press **#** to complete input.
+        
+        LCD shows conversions:
+        ```
+        Binario:
+        11111111
+        
+        Octal:
+        377
+        
+        Hexadecimal:
+        FF
+        ```
+      </Step>
+      
+      <Step title="Return to Menu">
+        Wait for automatic timeout (~3 seconds) to return to main menu.
+      </Step>
+    </Steps>
+    
+    **Test Cases**:
+    | Decimal | Binary | Octal | Hexadecimal |
+    |---------|--------|-------|-------------|
+    | 0 | 0 | 0 | 0 |
+    | 15 | 1111 | 17 | F |
+    | 255 | 11111111 | 377 | FF |
+    | 4095 | 111111111111 | 7777 | FFF |
+  </Tab>
+  
+  <Tab title="Binary to Gray Code">
+    <Steps>
+      <Step title="Select Function">
+        Press **2** on the keypad.
+        
+        LCD displays:
+        ```
+        2 Bin a Gray
+        Ingrese Binario:
+        ```
+      </Step>
+      
+      <Step title="Enter Binary Number">
+        Type a binary number (only 0 and 1), for example: `1011`
+        
+        The firmware only accepts '0' and '9' characters from the keypad.
+      </Step>
+      
+      <Step title="Confirm and View Result">
+        Press **#** to convert.
+        
+        LCD shows:
+        ```
+        Gray Code:
+        1110
+        ```
+      </Step>
+    </Steps>
+    
+    **Test Cases**:
+    | Binary | Gray Code |
+    |--------|----------|
+    | 0000 | 0000 |
+    | 0001 | 0001 |
+    | 0010 | 0011 |
+    | 1011 | 1110 |
+    | 1111 | 1000 |
+  </Tab>
+  
+  <Tab title="Gray Code to Binary">
+    <Steps>
+      <Step title="Select Function">
+        Press **3** on the keypad.
+        
+        LCD displays:
+        ```
+        3 Gray a Bin
+        Ingrese Gray:
+        ```
+      </Step>
+      
+      <Step title="Enter Gray Code">
+        Type a Gray code sequence: `1110`
+      </Step>
+      
+      <Step title="Confirm and View Result">
+        Press **#** to convert.
+        
+        LCD shows:
+        ```
+        Binary Code:
+        1011
+        ```
+      </Step>
+    </Steps>
+    
+    **Test Cases**:
+    | Gray Code | Binary |
+    |-----------|--------|
+    | 0000 | 0000 |
+    | 0001 | 0001 |
+    | 0011 | 0010 |
+    | 1110 | 1011 |
+    | 1000 | 1111 |
+  </Tab>
+</Tabs>
+
+## Debugging in Proteus
+
+### Using Breakpoints
+
+<Steps>
+  <Step title="Enable Source Code Debugging">
+    Ensure the `.cof` file is loaded:
+    1. Right-click PIC18F4550 → Edit Properties
+    2. Under **Program File**, verify `.cof` file is detected
+    3. Check **Enable Debug** if available
+  </Step>
+  
+  <Step title="Set Breakpoints">
+    Right-click on the PIC → **Debug → Source Code**
+    
+    You can set breakpoints in the code window to pause execution.
+  </Step>
+  
+  <Step title="Step Through Code">
+    Use debug controls:
+    - **Step Into** (F7) - Execute one instruction
+    - **Step Over** (F8) - Execute function calls
+    - **Run to Cursor** - Execute until selected line
+  </Step>
+</Steps>
+
+### Monitoring Variables
+
+Watch key variables during simulation:
+
+```c
+numEnt      // Current input number
+choice      // Menu selection (1, 2, or 3)
+val         // Converted choice value
+num[]       // Input string buffer
+```
+
+Right-click PIC → **Debug → Watch Window** to add variables.
+
+## Simulation Performance Tips
+
+<Tip>
+  **Speed up simulation**: Set **Animation Speed** to maximum (slider at bottom right). The LCD refresh is slow in real-time simulation.
+</Tip>
+
+<Warning>
+  **Keypad bounce**: In simulation, keys may trigger multiple times if you click and hold. Use quick single clicks to simulate key presses.
+</Warning>
+
+### Common Simulation Issues
+
+<AccordionGroup>
+  <Accordion title="LCD shows garbage or blank screen" icon="display">
+    **Causes**:
+    - Clock frequency mismatch (must be 8 MHz)
+    - LCD not properly initialized
+    - Incorrect port connections
+    
+    **Solutions**:
+    1. Verify PIC clock is 8.000000 MHz
+    2. Check LCD control pins (RS, R/W, E, CS1, CS2, RST)
+    3. Ensure `hdm64gs12.c` driver matches your LCD model
+    4. Try resetting simulation (Stop and Start again)
+  </Accordion>
+  
+  <Accordion title="Keypad doesn't respond to clicks" icon="keyboard">
+    **Causes**:
+    - Missing pull-up resistors on columns
+    - Wrong port assignment
+    - Keypad matrix wiring incorrect
+    
+    **Solutions**:
+    1. Add 10kΩ pull-up resistors on RB4-RB7 (columns)
+    2. Verify rows connect to RB0-RB3, columns to RB4-RB7
+    3. Check `use_portb_kbd TRUE` is defined
+    4. Verify `kbd_init()` is called in main()
+  </Accordion>
+  
+  <Accordion title="Simulation runs very slowly" icon="hourglass">
+    **Causes**:
+    - Real-time mode with complex LCD graphics
+    - Debug mode enabled
+    
+    **Solutions**:
+    1. Increase animation speed (bottom-right slider)
+    2. Disable debug mode if not needed
+    3. Use step-through debugging for specific sections
+    4. Reduce delay times temporarily for faster testing
+  </Accordion>
+  
+  <Accordion title="Wrong conversion results" icon="calculator">
+    **Causes**:
+    - Input not properly terminated
+    - Buffer overflow
+    - Algorithm error
+    
+    **Solutions**:
+    1. Always press `#` to terminate input
+    2. Don't enter more than 19 characters (buffer size is 20)
+    3. Verify input contains only valid characters (0-9 for decimal, 0-1 for binary)
+    4. Use debug mode to inspect variables
+  </Accordion>
+</AccordionGroup>
+
+## Simulation vs Real Hardware
+
+### Differences to Expect
+
+<CardGroup cols={2}>
+  <Card title="Timing" icon="clock">
+    Simulation may run slower or faster than real-time depending on animation speed settings.
+  </Card>
+  
+  <Card title="Keypad Response" icon="hand-pointer">
+    Real keypads have mechanical bounce; simulation has perfect debouncing.
+  </Card>
+  
+  <Card title="LCD Contrast" icon="adjust">
+    Real LCD requires contrast adjustment (Vo pin); simulation displays perfectly.
+  </Card>
+  
+  <Card title="Power-up Delay" icon="power-off">
+    Real hardware needs power-up stabilization; simulation starts instantly.
+  </Card>
+</CardGroup>
+
+### Testing Checklist
+
+Before deploying to hardware, verify in simulation:
+
+- [ ] Main menu displays correctly on startup
+- [ ] All three menu options are selectable (1, 2, 3)
+- [ ] Decimal to binary/octal/hex conversion works
+- [ ] Binary to Gray code conversion works
+- [ ] Gray code to binary conversion works
+- [ ] Input termination with `#` key functions
+- [ ] Numeric input displays on LCD
+- [ ] Auto-return to menu after conversion
+- [ ] No crashes or freezes during operation
+
+## Advanced Simulation Techniques
+
+### Virtual Terminal
+
+Add a virtual terminal to monitor debug output:
+
+<Steps>
+  <Step title="Add UART Terminal">
+    1. Place a **COMPIM** component
+    2. Connect to PIC UART pins (RC6/TX, RC7/RX)
+    3. Configure for 9600 baud
+  </Step>
+  
+  <Step title="Add Debug Output to Code">
+    ```c
+    #use rs232(baud=9600, xmit=PIN_C6, rcv=PIN_C7)
+    
+    printf("Menu choice: %d\r\n", val);
+    ```
+  </Step>
+  
+  <Step title="Run and Monitor">
+    Debug messages appear in the virtual terminal window.
+  </Step>
+</Steps>
+
+### Logic Analyzer
+
+Monitor port activity:
+
+<Steps>
+  <Step title="Add Logic Analyzer">
+    From **Instruments**, add **DIGITAL ANALYSER**
+  </Step>
+  
+  <Step title="Connect Probes">
+    Attach probes to Port B (keypad) or Port D (LCD data)
+  </Step>
+  
+  <Step title="Capture Signals">
+    Run simulation and observe port transitions in real-time
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Build Hardware" icon="screwdriver-wrench" href="./building">
+    Compile and program physical PIC18F4550
+  </Card>
+  <Card title="Troubleshooting" icon="life-ring" href="./troubleshooting">
+    Solutions for common problems
+  </Card>
+</CardGroup>

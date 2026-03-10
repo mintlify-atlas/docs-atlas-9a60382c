@@ -1,0 +1,67 @@
+---
+title: "Number Base Converter"
+description: "Embedded firmware for converting between number bases using PIC18F4550 microcontroller"
+---
+
+<Note>
+  A microcontroller-based number system converter with support for decimal, binary, octal, hexadecimal, and Gray code conversions.
+</Note>
+
+## Key Features
+
+This embedded system provides powerful number conversion capabilities through an intuitive hardware interface:
+
+<CardGroup cols={2}>
+  <Card title="Multiple Base Conversions" icon="calculator" href="/user-guide/conversions">
+    Convert decimal to binary, octal, and hexadecimal in real-time
+  </Card>
+  <Card title="Gray Code Support" icon="binary" href="/user-guide/conversions">
+    Bi-directional conversion between binary and Gray code
+  </Card>
+  <Card title="Keypad Interface" icon="keyboard" href="/user-guide/keypad-interface">
+    4x4 matrix keypad for easy numeric input
+  </Card>
+  <Card title="LCD Display" icon="display" href="/reference/hardware-specifications">
+    Graphical LCD for clear conversion output
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Review Hardware Requirements">
+    Check the [hardware requirements](/hardware-requirements) to ensure you have all necessary components including the PIC18F4550 microcontroller, LCD display, and 4x4 keypad.
+  </Step>
+  <Step title="Set Up Development Environment">
+    Install the CCS C Compiler and Proteus simulation software by following the [software setup guide](/software-setup).
+  </Step>
+  <Step title="Build and Deploy">
+    Compile the firmware and program your microcontroller using the [building guide](/development/building).
+  </Step>
+</Steps>
+
+## Technical Capabilities
+
+The converter implements efficient algorithms for number base transformations:
+
+- **Decimal Conversions**: Transform decimal numbers to binary, octal, and hexadecimal representations
+- **Gray Code Operations**: Convert between binary and Gray code for error detection applications
+- **Real-time Processing**: Instant conversion and display of results on the graphical LCD
+- **User-friendly Input**: Simple keypad-based interface with '#' key for input confirmation
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Operation Guide" icon="book" href="/user-guide/operation">
+    Learn how to use the converter
+  </Card>
+  <Card title="API Functions" icon="code" href="/reference/api-functions">
+    Explore the conversion functions
+  </Card>
+  <Card title="Circuit Design" icon="microchip" href="/reference/circuit-design">
+    View the hardware schematic
+  </Card>
+  <Card title="Proteus Simulation" icon="flask" href="/development/proteus-simulation">
+    Test in simulation environment
+  </Card>
+</CardGroup>

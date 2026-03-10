@@ -1,0 +1,600 @@
+---
+title: Number Conversions
+description: Detailed guide to all supported conversion types including algorithms and examples
+icon: "arrow-right-arrow-left"
+---
+
+## Overview
+
+The Number Base Converter supports five different conversion operations across three main modes:
+
+1. **Decimal to Binary, Octal, and Hexadecimal** (simultaneous triple conversion)
+2. **Binary to Gray Code**
+3. **Gray Code to Binary**
+
+Each conversion uses optimized algorithms implemented in C for the PIC18F4550 microcontroller.
+
+<Info>
+All conversions happen instantly after pressing the `#` confirmation key. Results appear on the LCD display within milliseconds.
+</Info>
+
+## Decimal to Binary, Octal, and Hexadecimal
+
+This mode converts a decimal integer into three different number bases simultaneously.
+
+<AccordionGroup>
+  <Accordion title="Decimal to Binary Conversion" icon="binary">
+    ### Algorithm
+    
+    The decimal to binary conversion uses the standard division-by-2 method:
+    
+    ```c
+    // From Prueba Ccs.c:40-62
+    void decimal_binary(int num, char bin[]) {
+        int i = 0;
+        int j;
+        char temp[20];
+        
+        if (num == 0) {
+            bin[0] = '0';
+            bin[1] = '\0';
+            return;
+        }
+        
+        // Extract binary digits (LSB to MSB)
+        while (num > 0) {
+            temp[i] = (num % 2) + '0';  // Get remainder, convert to ASCII
+            num = num / 2;               // Divide by 2
+            i++;
+        }
+        
+        // Reverse the array to get correct binary order (MSB to LSB)
+        for (j = 0; j < i; j++) {
+            bin[j] = temp[i - j - 1];
+        }
+        bin[i] = '\0';  // Null-terminate
+    }
+    ```
+    
+    ### How It Works
+    
+    <Steps>
+      <Step title="Handle Zero">
+        Special case: if input is 0, return "0" immediately
+      </Step>
+      
+      <Step title="Divide and Collect">
+        Repeatedly divide the number by 2, collecting remainders (0 or 1)
+      </Step>
+      
+      <Step title="Reverse the Digits">
+        Remainders are collected LSB-first, so reverse the array to get MSB-first order
+      </Step>
+      
+      <Step title="Null-Terminate">
+        Add '\0' to create a valid C string
+      </Step>
+    </Steps>
+    
+    ### Example
+    
+    **Input**: 255 (decimal)
+    
+    **Process**:
+    - 255 ÷ 2 = 127 remainder 1
+    - 127 ÷ 2 = 63 remainder 1
+    - 63 ÷ 2 = 31 remainder 1
+    - 31 ÷ 2 = 15 remainder 1
+    - 15 ÷ 2 = 7 remainder 1
+    - 7 ÷ 2 = 3 remainder 1
+    - 3 ÷ 2 = 1 remainder 1
+    - 1 ÷ 2 = 0 remainder 1
+    
+    Collected: `11111111` (after reversal)
+    
+    **Output**: `11111111`
+  </Accordion>
+  
+  <Accordion title="Decimal to Octal Conversion" icon="eight">
+    ### Algorithm
+    
+    The decimal to octal conversion uses division-by-8:
+    
+    ```c
+    // From Prueba Ccs.c:64-86
+    void decimal_octal(int num, char oct[]) {
+        int i = 0;
+        int j;
+        char temp[20];
+        
+        if (num == 0) {
+            oct[0] = '0';
+            oct[1] = '\0';
+            return;
+        }
+        
+        // Extract octal digits (LSD to MSD)
+        while (num > 0) {
+            temp[i] = (num % 8) + '0';  // Get remainder (0-7), convert to ASCII
+            num = num / 8;               // Divide by 8
+            i++;
+        }
+        
+        // Reverse the array to get correct octal order (MSD to LSD)
+        for (j = 0; j < i; j++) {
+            oct[j] = temp[i - j - 1];
+        }
+        oct[i] = '\0';  // Null-terminate
+    }
+    ```
+    
+    ### How It Works
+    
+    <Steps>
+      <Step title="Handle Zero">
+        Special case: if input is 0, return "0" immediately
+      </Step>
+      
+      <Step title="Divide by 8">
+        Repeatedly divide the number by 8, collecting remainders (0-7)
+      </Step>
+      
+      <Step title="Reverse the Digits">
+        Remainders are collected least-significant-first, so reverse to get most-significant-first
+      </Step>
+      
+      <Step title="Null-Terminate">
+        Add '\0' to create a valid C string
+      </Step>
+    </Steps>
+    
+    ### Example
+    
+    **Input**: 255 (decimal)
+    
+    **Process**:
+    - 255 ÷ 8 = 31 remainder 7
+    - 31 ÷ 8 = 3 remainder 7
+    - 3 ÷ 8 = 0 remainder 3
+    
+    Collected: `377` (after reversal)
+    
+    **Output**: `377`
+  </Accordion>
+  
+  <Accordion title="Decimal to Hexadecimal Conversion" icon="hashtag">
+    ### Algorithm
+    
+    The decimal to hexadecimal conversion uses division-by-16 with hex character mapping:
+    
+    ```c
+    // From Prueba Ccs.c:88-111
+    void decimal_hexadecimal(int num, char hex[]) {
+        int i = 0;
+        int j;
+        char temp[20];
+        char hex_chars[] = "0123456789ABCDEF";  // Hex digit lookup table
+        
+        if (num == 0) {
+            hex[0] = '0';
+            hex[1] = '\0';
+            return;
+        }
+        
+        // Extract hexadecimal digits (LSD to MSD)
+        while (num > 0) {
+            temp[i] = hex_chars[num % 16];  // Map remainder (0-15) to hex char
+            num = num / 16;                  // Divide by 16
+            i++;
+        }
+        
+        // Reverse the array to get correct hex order (MSD to LSD)
+        for (j = 0; j < i; j++) {
+            hex[j] = temp[i - j - 1];
+        }
+        hex[i] = '\0';  // Null-terminate
+    }
+    ```
+    
+    ### How It Works
+    
+    <Steps>
+      <Step title="Define Hex Characters">
+        Use lookup table "0123456789ABCDEF" to map remainders 0-15 to hex digits
+      </Step>
+      
+      <Step title="Handle Zero">
+        Special case: if input is 0, return "0" immediately
+      </Step>
+      
+      <Step title="Divide by 16">
+        Repeatedly divide the number by 16, mapping remainders to hex characters
+      </Step>
+      
+      <Step title="Reverse the Digits">
+        Reverse the collected digits to get most-significant-first order
+      </Step>
+      
+      <Step title="Null-Terminate">
+        Add '\0' to create a valid C string
+      </Step>
+    </Steps>
+    
+    ### Example
+    
+    **Input**: 255 (decimal)
+    
+    **Process**:
+    - 255 ÷ 16 = 15 remainder 15 → 'F'
+    - 15 ÷ 16 = 0 remainder 15 → 'F'
+    
+    Collected: `FF` (after reversal)
+    
+    **Output**: `FF`
+  </Accordion>
+</AccordionGroup>
+
+### Complete Decimal Conversion Example
+
+When you select mode 1 and enter a decimal number, all three conversions execute:
+
+```c
+// From Prueba Ccs.c:113-147
+void decToBinOctHex(){
+    char input[20];
+    char bin[20], oct[20], hex[20];
+    const char *text1 = "Ingrese Decimal:";
+    
+    glcd_text57(4, 16, text1, 1, on);
+    readInput(input, 20);  // Get user input
+    
+    int numEnt = atoi(input);  // Convert string to integer
+    
+    // Perform all three conversions
+    decimal_binary(numEnt, bin);
+    decimal_octal(numEnt, oct);
+    decimal_hexadecimal(numEnt, hex);
+    
+    glcd_fillscreen(0);  // Clear screen
+    
+    // Display results sequentially with delays
+    glcd_text57(4, 8, "Binario:", 1, on);
+    glcd_text57(4, 16, bin, 1, on);
+    delay_ms(1000);
+    
+    glcd_text57(4, 24, "Octal:", 1, on);
+    glcd_text57(4, 32, oct, 1, on);
+    delay_ms(1000);
+    
+    glcd_text57(4, 40, "Hexadecimal:", 1, on);
+    glcd_text57(4, 48, hex, 1, on);
+    delay_ms(1000);
+}
+```
+
+<Tabs>
+  <Tab title="Example: 100">
+    **Input**: `100` (decimal)
+    
+    **Results**:
+    - Binary: `1100100`
+    - Octal: `144`
+    - Hexadecimal: `64`
+  </Tab>
+  
+  <Tab title="Example: 255">
+    **Input**: `255` (decimal)
+    
+    **Results**:
+    - Binary: `11111111`
+    - Octal: `377`
+    - Hexadecimal: `FF`
+  </Tab>
+  
+  <Tab title="Example: 1024">
+    **Input**: `1024` (decimal)
+    
+    **Results**:
+    - Binary: `10000000000`
+    - Octal: `2000`
+    - Hexadecimal: `400`
+  </Tab>
+</Tabs>
+
+## Binary to Gray Code Conversion
+
+Gray code is a binary numeral system where consecutive values differ in only one bit. This property makes it useful for error detection and digital communications.
+
+<Accordion title="Binary to Gray Algorithm" icon="arrow-right">
+  ### Algorithm
+  
+  ```c
+  // From Prueba Ccs.c:151-157
+  void binaryToGray(char bin[], char gray[], int n) {
+      gray[0] = bin[0];  // MSB of Gray code is same as binary MSB
+      
+      // For each subsequent bit, XOR with previous binary bit
+      for (int i = 1; i < n; i++) {
+          gray[i] = (bin[i] == bin[i-1]) ? '0' : '1';  // XOR operation
+      }
+      
+      gray[n] = '\0';  // Null-terminate the string
+  }
+  ```
+  
+  ### How It Works
+  
+  The Gray code conversion follows these rules:
+  1. The most significant bit (MSB) of Gray code equals the MSB of binary
+  2. Each remaining Gray bit is the XOR of the current binary bit with the previous binary bit
+     - If binary bits are **same** → Gray bit is `0`
+     - If binary bits are **different** → Gray bit is `1`
+  
+  <Steps>
+    <Step title="Copy MSB">
+      `gray[0] = bin[0]` - First bit is unchanged
+    </Step>
+    
+    <Step title="XOR Consecutive Bits">
+      For each position i from 1 to n-1:
+      - Compare `bin[i]` with `bin[i-1]`
+      - If equal: `gray[i] = '0'`
+      - If different: `gray[i] = '1'`
+    </Step>
+    
+    <Step title="Null-Terminate">
+      Add '\0' at the end to form a valid string
+    </Step>
+  </Steps>
+  
+  ### Detailed Example
+  
+  **Input**: `1010` (binary)
+  
+  **Process**:
+  
+  | Position | Binary Bit | Previous Binary | Same? | Gray Bit |
+  |----------|-----------|-----------------|-------|----------|
+  | 0 (MSB)  | 1         | -               | -     | **1**    |
+  | 1        | 0         | 1               | No    | **1**    |
+  | 2        | 1         | 0               | No    | **1**    |
+  | 3        | 0         | 1               | No    | **1**    |
+  
+  **Output**: `1111` (Gray code)
+  
+  ### More Examples
+  
+  <CardGroup cols={2}>
+    <Card title="Binary: 0000">
+      Gray: `0000`
+    </Card>
+    <Card title="Binary: 0001">
+      Gray: `0001`
+    </Card>
+    <Card title="Binary: 0010">
+      Gray: `0011`
+    </Card>
+    <Card title="Binary: 0011">
+      Gray: `0010`
+    </Card>
+    <Card title="Binary: 0100">
+      Gray: `0110`
+    </Card>
+    <Card title="Binary: 1111">
+      Gray: `1000`
+    </Card>
+  </CardGroup>
+</Accordion>
+
+### Binary to Gray Conversion Function
+
+```c
+// From Prueba Ccs.c:169-183
+void convertBinToGray() {
+    char bin[20], gray[20];
+    const char *text1 = "Ingrese Binario:";
+    const char *text2 = "Gray Code:";
+    
+    glcd_text57(4, 16, text1, 1, on);
+    readInput(bin, 20);  // Get binary input from keypad
+    
+    int n = strlen(bin);  // Get length of binary string
+    binaryToGray(bin, gray, n);  // Perform conversion
+    
+    glcd_fillscreen(0);  // Clear screen
+    glcd_text57(4, 8, text2, 1, on);
+    glcd_text57(4, 16, gray, 1, on);  // Display result
+}
+```
+
+<Tip>
+Gray code is also called "reflected binary code" because each successive value reflects around the middle bit. This makes it useful for rotary encoders and analog-to-digital converters where minimizing errors during transitions is critical.
+</Tip>
+
+## Gray Code to Binary Conversion
+
+This conversion reverses the Gray code back to standard binary representation.
+
+<Accordion title="Gray to Binary Algorithm" icon="arrow-left">
+  ### Algorithm
+  
+  ```c
+  // From Prueba Ccs.c:159-165
+  void grayToBinary(char gray[], char bin[], int n) {
+      bin[0] = gray[0];  // MSB of Binary is same as Gray MSB
+      
+      // For each subsequent bit, XOR with previous binary bit (not Gray!)
+      for (int i = 1; i < n; i++) {
+          bin[i] = (gray[i] == '0') ? bin[i-1] : (bin[i-1] == '0' ? '1' : '0');
+      }
+      
+      bin[n] = '\0';  // Null-terminate the string
+  }
+  ```
+  
+  ### How It Works
+  
+  The Gray to Binary conversion follows these rules:
+  1. The most significant bit (MSB) of binary equals the MSB of Gray code
+  2. Each remaining binary bit is determined by XORing the current Gray bit with the **previous binary bit** (not Gray bit)
+     - If Gray bit is `0` → Binary bit = previous binary bit
+     - If Gray bit is `1` → Binary bit = flipped previous binary bit
+  
+  <Steps>
+    <Step title="Copy MSB">
+      `bin[0] = gray[0]` - First bit is unchanged
+    </Step>
+    
+    <Step title="XOR with Previous Binary">
+      For each position i from 1 to n-1:
+      - If `gray[i] == '0'`: Copy `bin[i-1]`
+      - If `gray[i] == '1'`: Flip `bin[i-1]` (0→1, 1→0)
+    </Step>
+    
+    <Step title="Null-Terminate">
+      Add '\0' at the end to form a valid string
+    </Step>
+  </Steps>
+  
+  ### Detailed Example
+  
+  **Input**: `1111` (Gray code)
+  
+  **Process**:
+  
+  | Position | Gray Bit | Previous Binary | Operation       | Binary Bit |
+  |----------|----------|-----------------|-----------------|------------|
+  | 0 (MSB)  | 1        | -               | Copy            | **1**      |
+  | 1        | 1        | 1               | Flip (1→0)      | **0**      |
+  | 2        | 1        | 0               | Flip (0→1)      | **1**      |
+  | 3        | 1        | 1               | Flip (1→0)      | **0**      |
+  
+  **Output**: `1010` (binary)
+  
+  ### Verification
+  
+  Let's verify this is correct by converting `1010` binary back to Gray:
+  - Gray[0] = 1 (copy MSB)
+  - Gray[1] = 1 XOR 0 = 1 (different)
+  - Gray[2] = 0 XOR 1 = 1 (different)
+  - Gray[3] = 1 XOR 0 = 1 (different)
+  - Result: `1111` ✓
+  
+  ### More Examples
+  
+  <CardGroup cols={2}>
+    <Card title="Gray: 0000">
+      Binary: `0000`
+    </Card>
+    <Card title="Gray: 0001">
+      Binary: `0001`
+    </Card>
+    <Card title="Gray: 0011">
+      Binary: `0010`
+    </Card>
+    <Card title="Gray: 0010">
+      Binary: `0011`
+    </Card>
+    <Card title="Gray: 0110">
+      Binary: `0100`
+    </Card>
+    <Card title="Gray: 1000">
+      Binary: `1111`
+    </Card>
+  </CardGroup>
+</Accordion>
+
+### Gray to Binary Conversion Function
+
+```c
+// From Prueba Ccs.c:185-199
+void convertGrayToBin() {
+    char gray[20], bin[20];
+    const char *text3 = "Ingrese Gray:";
+    const char *text4 = "Binary Code:";
+    
+    glcd_text57(4, 16, text3, 1, on);
+    readInput(gray, 20);  // Get Gray code input from keypad
+    
+    int n = strlen(gray);  // Get length of Gray string
+    grayToBinary(gray, bin, n);  // Perform conversion
+    
+    glcd_fillscreen(0);  // Clear screen
+    glcd_text57(4, 8, text4, 1, on);
+    glcd_text57(4, 16, bin, 1, on);  // Display result
+}
+```
+
+<Tip>
+The key difference between Binary→Gray and Gray→Binary conversions is what you compare with:
+- **Binary to Gray**: Compare current binary bit with **previous binary bit**
+- **Gray to Binary**: Compare current Gray bit with **previous binary bit** (the one you just calculated)
+</Tip>
+
+## Conversion Comparison Table
+
+Here's a complete reference showing the relationship between decimal, binary, octal, hexadecimal, and Gray code:
+
+| Decimal | Binary | Octal | Hex | Gray |
+|---------|--------|-------|-----|------|
+| 0       | 0000   | 0     | 0   | 0000 |
+| 1       | 0001   | 1     | 1   | 0001 |
+| 2       | 0010   | 2     | 2   | 0011 |
+| 3       | 0011   | 3     | 3   | 0010 |
+| 4       | 0100   | 4     | 4   | 0110 |
+| 5       | 0101   | 5     | 5   | 0111 |
+| 6       | 0110   | 6     | 6   | 0101 |
+| 7       | 0111   | 7     | 7   | 0100 |
+| 8       | 1000   | 10    | 8   | 1100 |
+| 9       | 1001   | 11    | 9   | 1101 |
+| 10      | 1010   | 12    | A   | 1111 |
+| 11      | 1011   | 13    | B   | 1110 |
+| 12      | 1100   | 14    | C   | 1010 |
+| 13      | 1101   | 15    | D   | 1011 |
+| 14      | 1110   | 16    | E   | 1001 |
+| 15      | 1111   | 17    | F   | 1000 |
+
+## Best Practices for Conversions
+
+<CardGroup cols={2}>
+  <Card title="Input Validation" icon="shield-check">
+    For binary and Gray code inputs, only enter 0s and 1s. The device accepts any digits but conversions expect binary format.
+  </Card>
+  
+  <Card title="Range Awareness" icon="chart-line">
+    The PIC18F4550 uses 16-bit integers. Maximum decimal input is 65535. Larger values will overflow.
+  </Card>
+  
+  <Card title="Leading Zeros" icon="zero">
+    Binary and Gray code do not require leading zeros, but including them maintains bit-width clarity.
+  </Card>
+  
+  <Card title="Result Verification" icon="magnifying-glass">
+    Cross-check results using the comparison table above for values 0-15 to verify correct operation.
+  </Card>
+</CardGroup>
+
+## Practical Applications
+
+<AccordionGroup>
+  <Accordion title="Why Use Different Number Bases?" icon="question">
+    - **Binary**: Direct representation of digital logic states (0/1, off/on)
+    - **Octal**: Compact representation, groups 3 bits, historically used in computing
+    - **Hexadecimal**: Very compact, groups 4 bits, standard for memory addresses and color codes
+    - **Gray Code**: Error-resistant, only one bit changes between consecutive values
+  </Accordion>
+  
+  <Accordion title="When to Use Gray Code?" icon="lightbulb">
+    - **Rotary Encoders**: Position sensing where only one bit should change at a time
+    - **Error Detection**: Minimizes errors during signal transitions
+    - **ADC/DAC**: Analog-to-digital conversion where minimizing transition errors is critical
+    - **Mechanical Systems**: Reduces false readings during state changes
+  </Accordion>
+  
+  <Accordion title="Real-World Examples" icon="earth">
+    - **Hexadecimal in Web**: Color #FF0000 = Red (255, 0, 0 in RGB)
+    - **Binary in Networking**: IP addresses, subnet masks
+    - **Octal in Unix**: File permissions (chmod 755)
+    - **Gray Code in Sensors**: Optical and mechanical position encoders
+  </Accordion>
+</AccordionGroup>

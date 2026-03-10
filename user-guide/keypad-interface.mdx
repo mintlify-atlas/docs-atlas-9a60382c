@@ -1,0 +1,425 @@
+---
+title: Keypad Interface
+description: Complete guide to using the 4x4 matrix keypad for number input and navigation
+icon: "keyboard"
+---
+
+## Keypad Overview
+
+The Number Base Converter uses a 4x4 matrix keypad for all user input. The keypad provides 16 keys arranged in a grid, connected to Port B of the PIC18F4550 microcontroller.
+
+<Info>
+The keypad requires pull-up resistors on the column pins for proper operation. These are typically provided by the LCD module or external resistors.
+</Info>
+
+## 4x4 Keypad Layout
+
+The physical layout of the keypad is defined in the driver code:
+
+```c
+// Keypad layout from KBD4x4.c:82-85
+char const KEYS[4][4] = {{'1','2','3','A'},
+                         {'4','5','6','B'},
+                         {'7','8','9','C'},
+                         {'*','0','#','D'}};
+```
+
+### Visual Layout
+
+<CardGroup cols={4}>
+  <Card title="1" icon="1">
+    Row 0, Col 0
+  </Card>
+  <Card title="2" icon="2">
+    Row 0, Col 1
+  </Card>
+  <Card title="3" icon="3">
+    Row 0, Col 2
+  </Card>
+  <Card title="A" icon="a">
+    Row 0, Col 3
+  </Card>
+  
+  <Card title="4" icon="4">
+    Row 1, Col 0
+  </Card>
+  <Card title="5" icon="5">
+    Row 1, Col 1
+  </Card>
+  <Card title="6" icon="6">
+    Row 1, Col 2
+  </Card>
+  <Card title="B" icon="b">
+    Row 1, Col 3
+  </Card>
+  
+  <Card title="7" icon="7">
+    Row 2, Col 0
+  </Card>
+  <Card title="8" icon="8">
+    Row 2, Col 1
+  </Card>
+  <Card title="9" icon="9">
+    Row 2, Col 2
+  </Card>
+  <Card title="C" icon="c">
+    Row 2, Col 3
+  </Card>
+  
+  <Card title="*" icon="asterisk">
+    Row 3, Col 0
+  </Card>
+  <Card title="0" icon="0">
+    Row 3, Col 1
+  </Card>
+  <Card title="#" icon="hashtag">
+    Row 3, Col 2
+  </Card>
+  <Card title="D" icon="d">
+    Row 3, Col 3
+  </Card>
+</CardGroup>
+
+## Key Functions
+
+Different keys serve specific purposes in the Number Base Converter:
+
+### Active Keys
+
+<Tabs>
+  <Tab title="Numeric Keys (0-9)">
+    **Purpose**: Number input during conversion operations
+    
+    **Function**: Each numeric key (0, 1, 2, 3, 4, 5, 6, 7, 8, 9) inputs the corresponding digit.
+    
+    ```c
+    // Numeric key validation from Prueba Ccs.c:32-35
+    if (key >= '0' && key <= '9') {
+        input[index++] = key;
+        glcd_text57(4 + (index * 6), 32, &key, 1, on);
+    }
+    ```
+    
+    **Usage**:
+    - Press repeatedly to build multi-digit numbers
+    - Each press displays the digit on screen immediately
+    - Valid for all conversion modes
+  </Tab>
+  
+  <Tab title="Hash Key (#)">
+    **Purpose**: Input confirmation / Enter key
+    
+    **Function**: Confirms the entered number and triggers conversion.
+    
+    ```c
+    // Hash key detection from Prueba Ccs.c:29-31
+    if (key == '#') {
+        break;  // End input and proceed to conversion
+    }
+    ```
+    
+    **Usage**:
+    - Press after entering your complete number
+    - Acts as the "Enter" or "Confirm" button
+    - Required to complete every number input
+    
+    <Warning>
+    Without pressing `#`, your input will not be processed and conversion will not occur.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Menu Selection (1, 2, 3)">
+    **Purpose**: Conversion mode selection from main menu
+    
+    **Function**: At the main menu, keys 1, 2, and 3 select conversion modes:
+    
+    - **1**: Decimal to Binary-Octal-Hexadecimal
+    - **2**: Binary to Gray Code
+    - **3**: Gray Code to Binary
+    
+    ```c
+    // Menu selection logic from Prueba Ccs.c:230-248
+    switch (val) {
+        case 1:
+            glcd_text57(4,4,textDec,1,on);
+            decToBinOctHex();
+            break;
+        case 2:
+            glcd_text57(4, 4, textBin, 1, on);
+            convertBinToGray();
+            break;
+        case 3:
+            glcd_text57(4,4,textGray,1,on);
+            convertGrayToBin();
+            break;
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Unused Keys
+
+<Note>
+Keys **A**, **B**, **C**, **D**, and **\*** are not used by the application and have no function in the current implementation.
+</Note>
+
+## How readInput() Works
+
+The `readInput()` function is the core input handler that processes keypad input:
+
+### Function Flow
+
+<Steps>
+  <Step title="Initialize Input Buffer">
+    The function receives a character array to store input and a maximum length:
+    
+    ```c
+    void readInput(char *input, int maxLength) {
+        char key;
+        int index = 0;
+    ```
+  </Step>
+  
+  <Step title="Enter Input Loop">
+    Continuously polls the keypad for key presses:
+    
+    ```c
+    while (index < maxLength - 1) {
+        key = kbd_getc();
+        if (key != 0) {  // Key press detected
+    ```
+  </Step>
+  
+  <Step title="Check for Confirmation">
+    If `#` is pressed, exit the loop:
+    
+    ```c
+    if (key == '#') {
+        break;
+    }
+    ```
+  </Step>
+  
+  <Step title="Validate and Store Input">
+    Only numeric keys (0-9) are accepted and stored:
+    
+    ```c
+    if (key >= '0' && key <= '9') {
+        input[index++] = key;
+        glcd_text57(4 + (index * 6), 32, &key, 1, on);
+    }
+    ```
+    
+    Each valid digit:
+    - Is stored in the input buffer
+    - Increments the index counter
+    - Displays on the LCD at position (4 + index * 6, 32)
+  </Step>
+  
+  <Step title="Null-Terminate String">
+    After the loop exits (either by `#` or max length), null-terminate the string:
+    
+    ```c
+    input[index] = '\0';
+    ```
+  </Step>
+</Steps>
+
+### Input Constraints
+
+<CardGroup cols={2}>
+  <Card title="Maximum Length" icon="ruler">
+    Up to 19 characters can be entered (maxLength - 1 for null terminator)
+  </Card>
+  
+  <Card title="Character Filter" icon="filter">
+    Only keys '0' through '9' are stored; other keys are silently ignored
+  </Card>
+  
+  <Card title="Visual Feedback" icon="display">
+    Each digit appears on screen with 6-pixel horizontal spacing
+  </Card>
+  
+  <Card title="Confirmation Required" icon="check">
+    Input must be confirmed with '#' to proceed
+  </Card>
+</CardGroup>
+
+## Keypad Scanning Mechanism
+
+The keypad driver uses a column-scanning technique to detect key presses:
+
+### Pin Configuration
+
+```c
+// Column and row pin definitions for black keypad (KBD4x4.c:66-74)
+#define COL0 (1 << 4)  // Port B, bit 4
+#define COL1 (1 << 5)  // Port B, bit 5
+#define COL2 (1 << 6)  // Port B, bit 6
+#define COL3 (1 << 7)  // Port B, bit 7
+
+#define ROW0 (1 << 0)  // Port B, bit 0
+#define ROW1 (1 << 1)  // Port B, bit 1
+#define ROW2 (1 << 2)  // Port B, bit 2
+#define ROW3 (1 << 3)  // Port B, bit 3
+```
+
+### Scanning Algorithm
+
+<Accordion title="How kbd_getc() Detects Key Presses">
+  The `kbd_getc()` function implements a debounced scanning algorithm:
+  
+  1. **Column Activation**: Each column is driven low sequentially
+  2. **Row Reading**: Rows are read to detect which key connects the active column to ground
+  3. **Debouncing**: Key presses are validated over multiple calls (debounce factor: 33)
+  4. **Key Mapping**: Row and column coordinates map to the KEYS array
+  
+  ```c
+  // Key lookup from KBD4x4.c:137
+  last_key = KEYS[row][col];
+  ```
+  
+  The function returns `'\0'` (null character) when no key is pressed, or the character code when a key is detected.
+</Accordion>
+
+<Info>
+The debounce factor of 33 means the function should be called approximately 10-11 times per second for optimal key detection without false triggers.
+</Info>
+
+## Input Examples
+
+See how different input scenarios work with the keypad:
+
+<Tabs>
+  <Tab title="Decimal Input">
+    **Scenario**: Converting decimal 255 to binary, octal, and hexadecimal
+    
+    **Key Sequence**:
+    1. Press `2` → Display shows: `2`
+    2. Press `5` → Display shows: `25`
+    3. Press `5` → Display shows: `255`
+    4. Press `#` → Conversion executes
+    
+    **LCD Flow**:
+    ```text
+    Ingrese Decimal:
+    255
+    
+    [After pressing #]
+    
+    Binario:
+    11111111
+    
+    Octal:
+    377
+    
+    Hexadecimal:
+    FF
+    ```
+  </Tab>
+  
+  <Tab title="Binary Input">
+    **Scenario**: Converting binary 1010 to Gray code
+    
+    **Key Sequence**:
+    1. Press `1` → Display shows: `1`
+    2. Press `0` → Display shows: `10`
+    3. Press `1` → Display shows: `101`
+    4. Press `0` → Display shows: `1010`
+    5. Press `#` → Conversion executes
+    
+    **LCD Flow**:
+    ```text
+    Ingrese Binario:
+    1010
+    
+    [After pressing #]
+    
+    Gray Code:
+    1111
+    ```
+  </Tab>
+  
+  <Tab title="Gray Code Input">
+    **Scenario**: Converting Gray code 1111 back to binary
+    
+    **Key Sequence**:
+    1. Press `1` → Display shows: `1`
+    2. Press `1` → Display shows: `11`
+    3. Press `1` → Display shows: `111`
+    4. Press `1` → Display shows: `1111`
+    5. Press `#` → Conversion executes
+    
+    **LCD Flow**:
+    ```text
+    Ingrese Gray:
+    1111
+    
+    [After pressing #]
+    
+    Binary Code:
+    1010
+    ```
+  </Tab>
+  
+  <Tab title="Menu Navigation">
+    **Scenario**: Selecting Binary to Gray conversion
+    
+    **Key Sequence**:
+    1. View main menu (automatic on startup)
+    2. Press `2` → Binary to Gray mode activates
+    
+    **LCD Flow**:
+    ```text
+    Menu de Conversiones
+    1 Dec a Bin-Oct-Hex
+    2 Bin a Gray
+    3 Gray a Bin
+    
+    [After pressing 2]
+    
+    2 Bin a Gray
+    Ingrese Binario:
+    ```
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Press Firmly" icon="hand-pointer">
+    Press keys firmly and briefly to ensure reliable detection by the scanning algorithm.
+  </Card>
+  
+  <Card title="Wait for Display" icon="clock">
+    Wait for each digit to appear on screen before pressing the next key to confirm registration.
+  </Card>
+  
+  <Card title="Always Confirm with #" icon="hashtag">
+    Remember to press `#` after entering your complete number - the conversion will not start without it.
+  </Card>
+  
+  <Card title="Ignore Unused Keys" icon="ban">
+    Keys A, B, C, D, and * have no function and can be ignored during operation.
+  </Card>
+</CardGroup>
+
+## Technical Specifications
+
+<Accordion title="Keypad Hardware Configuration">
+  - **Interface**: 4x4 matrix (16 keys)
+  - **Connection**: Port B of PIC18F4550
+  - **Columns**: Bits 4-7 (output)
+  - **Rows**: Bits 0-3 (input)
+  - **Pull-ups**: Required on column pins
+  - **Debounce**: Software debouncing with factor 33
+  - **Scan Rate**: Optimized for ~11 Hz polling
+</Accordion>
+
+<Accordion title="Input Buffer Specifications">
+  - **Buffer Size**: 20 bytes (19 characters + null terminator)
+  - **Character Set**: ASCII characters '0' through '9'
+  - **Termination**: '#' key or buffer full
+  - **Display**: Real-time echo at 6-pixel horizontal spacing
+  - **Starting Position**: X=4, Y=32 on LCD
+</Accordion>

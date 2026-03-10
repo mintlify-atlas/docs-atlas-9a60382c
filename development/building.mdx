@@ -1,0 +1,329 @@
+---
+title: 'Building the Project'
+description: 'Complete guide to compiling the Number Base Converter with CCS C Compiler'
+icon: 'hammer'
+---
+
+## Overview
+
+This guide walks you through building the Number Base Converter firmware using the CCS C Compiler (PCH). The project targets the PIC18F4550 microcontroller and generates a HEX file ready for programming or simulation.
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="CCS C Compiler" icon="code">
+    PCH compiler v5.093 or later for PIC18 devices
+  </Card>
+  <Card title="Project Files" icon="folder">
+    `Prueba Ccs.ccspjt` and source files
+  </Card>
+</CardGroup>
+
+## Opening the Project
+
+<Steps>
+  <Step title="Launch CCS IDE">
+    Open the CCS C Compiler IDE (PCWHD, PCH, or PCHWP edition).
+  </Step>
+  
+  <Step title="Open Project File">
+    Navigate to **File → Open Project** and select:
+    ```
+    Prueba Ccs.ccspjt
+    ```
+    The project will load with `Prueba Ccs.c` as the main source file.
+  </Step>
+  
+  <Step title="Verify Target Configuration">
+    Check the project settings show:
+    - **Processor**: PIC18F4550
+    - **Compiler**: PCH
+    - **Target**: Prueba Ccs.hex
+  </Step>
+</Steps>
+
+## Required Include Files
+
+The project depends on several libraries and header files. Ensure these are available in your CCS compiler installation:
+
+```c Prueba Ccs.c:1-9
+#include <18f4550.h>
+#use delay(clock=8Mhz)
+#include <hdm64gs12.c>  // LCD graphic display driver
+#include <graphics.c>   // LCD graphic functions
+#define use_portb_kbd TRUE
+#include <kbd4x4.c>     // 4x4 keypad matrix driver
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+```
+
+<Info>
+  **Custom Libraries**: The project uses `hdm64gs12.c` and `graphics.c` for the HDM64GS12 128x64 graphical LCD. These must be in the same directory as the source or in the CCS Drivers folder.
+</Info>
+
+### Keypad Configuration
+
+The keypad driver is configured to use **Port B**:
+
+```c Prueba Ccs.c:5
+#define use_portb_kbd TRUE
+```
+
+This setting in `kbd4x4.c` maps the 4x4 matrix keypad to Port B pins with the following layout:
+
+```c kbd4x4.c:66-74
+#define COL0 (1 << 4)  // RB4
+#define COL1 (1 << 5)  // RB5
+#define COL2 (1 << 6)  // RB6
+#define COL3 (1 << 7)  // RB7
+
+#define ROW0 (1 << 0)  // RB0
+#define ROW1 (1 << 1)  // RB1
+#define ROW2 (1 << 2)  // RB2
+#define ROW3 (1 << 3)  // RB3
+```
+
+## Clock Configuration
+
+The firmware is configured for an **8 MHz** oscillator:
+
+```c Prueba Ccs.c:2
+#use delay(clock=8Mhz)
+```
+
+<Warning>
+  Ensure your hardware uses an 8 MHz crystal or configure the internal oscillator to 8 MHz. Incorrect clock settings will affect delay timing and UART communication if used.
+</Warning>
+
+## Compilation Process
+
+<Steps>
+  <Step title="Build the Project">
+    Click **Compile → Compile** (or press `Ctrl+F9`) to start the build process.
+    
+    The compiler will:
+    - Parse all source files and includes
+    - Generate intermediate code
+    - Optimize for the PIC18F4550
+    - Create output files
+  </Step>
+  
+  <Step title="Monitor Compilation Output">
+    Watch the **Output Window** for:
+    ```plaintext
+    Compiling Prueba Ccs.c...
+    Memory usage: ROM=XX% RAM=XX%
+    0 Errors, 0 Warnings.
+    Build Successful.
+    ```
+  </Step>
+  
+  <Step title="Verify Generated Files">
+    After successful compilation, the following files are created:
+    
+    <AccordionGroup>
+      <Accordion title="Prueba Ccs.hex" icon="microchip">
+        Intel HEX format file for programming the PIC18F4550 or loading into Proteus simulation.
+      </Accordion>
+      
+      <Accordion title="Prueba Ccs.cof" icon="file-code">
+        COFF debug file with symbols for debugging in MPLAB or CCS debugger.
+      </Accordion>
+      
+      <Accordion title="Prueba Ccs.lst" icon="list">
+        Assembly listing showing the generated code with memory addresses.
+      </Accordion>
+      
+      <Accordion title="Prueba Ccs.sym" icon="table">
+        Symbol table with variable and function addresses.
+      </Accordion>
+      
+      <Accordion title="Prueba Ccs.esym" icon="brackets-curly">
+        Extended symbol information.
+      </Accordion>
+      
+      <Accordion title="Prueba Ccs.tre" icon="diagram-project">
+        Call tree showing function relationships and memory usage.
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+</Steps>
+
+## Compiler Options
+
+<Tabs>
+  <Tab title="Standard Build">
+    Default compilation with standard optimizations:
+    
+    ```c
+    // No special compiler directives needed
+    // Uses default PCH settings
+    ```
+    
+    This is suitable for most use cases and testing.
+  </Tab>
+  
+  <Tab title="Debug Build">
+    For debugging with ICD or simulator:
+    
+    ```c
+    #device ICD=TRUE
+    ```
+    
+    Add this directive after the `#include <18f4550.h>` line to enable in-circuit debugging.
+  </Tab>
+  
+  <Tab title="Optimized Build">
+    For production with size optimization:
+    
+    ```c
+    #opt 9
+    ```
+    
+    This enables maximum code optimization to reduce program size.
+  </Tab>
+</Tabs>
+
+## Fuse Configuration
+
+Add fuse settings for standalone operation:
+
+```c
+#include <18f4550.h>
+#fuses HS, NOWDT, NOPROTECT, NOLVP, NODEBUG
+#use delay(clock=8Mhz)
+```
+
+<CardGroup cols={2}>
+  <Card title="HS" icon="wave-sine">
+    High-speed crystal/resonator (8 MHz)
+  </Card>
+  <Card title="NOWDT" icon="timer">
+    Disable watchdog timer
+  </Card>
+  <Card title="NOPROTECT" icon="lock-open">
+    Disable code protection
+  </Card>
+  <Card title="NOLVP" icon="bolt">
+    Disable low-voltage programming
+  </Card>
+</CardGroup>
+
+## Programming the PIC18F4550
+
+<Steps>
+  <Step title="Connect Programmer">
+    Connect your PIC programmer (PICkit 3, PICkit 4, ICD3, etc.) to the ICSP pins:
+    - MCLR/VPP
+    - PGD (RB7)
+    - PGC (RB6)
+    - VDD
+    - VSS
+  </Step>
+  
+  <Step title="Load HEX File">
+    In your programmer software (MPLAB IPE, PICkit programmer app, etc.), load:
+    ```
+    Prueba Ccs.hex
+    ```
+  </Step>
+  
+  <Step title="Program Device">
+    Click **Program** and wait for verification:
+    ```plaintext
+    Programming...
+    Verifying...
+    Programming successful!
+    ```
+  </Step>
+  
+  <Step title="Power Cycle">
+    Disconnect the programmer and apply power to run the application.
+  </Step>
+</Steps>
+
+## Build Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Error: Cannot open include file 'hdm64gs12.c'" icon="triangle-exclamation">
+    **Problem**: LCD graphics library not found.
+    
+    **Solution**:
+    - Ensure `hdm64gs12.c` and `graphics.c` are in the same directory as `Prueba Ccs.c`
+    - Or copy them to `C:\Program Files (x86)\PICC\Drivers\`
+    - Verify the file names match exactly (case-sensitive on some systems)
+  </Accordion>
+  
+  <Accordion title="Error: Cannot open include file 'kbd4x4.c'" icon="keyboard">
+    **Problem**: Keypad driver not found.
+    
+    **Solution**:
+    - The custom `KBD4x4.c` file must be in the project directory
+    - Rename it to lowercase `kbd4x4.c` if necessary
+    - Check the `#include` directive matches the actual filename
+  </Accordion>
+  
+  <Accordion title="Error: Undefined identifier 'glcd_init'" icon="question">
+    **Problem**: Graphics library functions not available.
+    
+    **Solution**:
+    - Ensure `graphics.c` is included AFTER `hdm64gs12.c`
+    - Check that `hdm64gs12.c` is the correct driver for your LCD model
+    - Verify the LCD driver defines the required functions
+  </Accordion>
+  
+  <Accordion title="Error: Not enough ROM" icon="memory">
+    **Problem**: Code exceeds PIC18F4550 program memory (32KB).
+    
+    **Solution**:
+    ```c
+    #opt 9  // Enable maximum optimization
+    ```
+    - Remove unused conversion functions
+    - Reduce string buffer sizes if possible
+    - Use shorter text strings
+  </Accordion>
+  
+  <Accordion title="Error: Not enough RAM" icon="microchip">
+    **Problem**: Variables exceed available RAM (2KB).
+    
+    **Solution**:
+    - Reduce buffer sizes (e.g., `char prueba[20]` → `char prueba[10]`)
+    - Use `const` for constant strings to store them in ROM
+    - Share buffers between functions if they're not used simultaneously
+  </Accordion>
+  
+  <Accordion title="Warning: Function not void and does not return a value" icon="exclamation">
+    **Problem**: Missing return statements in non-void functions.
+    
+    **Solution**:
+    - Add `return;` or return appropriate values
+    - Or change function declaration to `void` if no return value is needed
+    - This is usually safe to ignore if the function never returns (infinite loop)
+  </Accordion>
+</AccordionGroup>
+
+## Memory Usage Analysis
+
+After compilation, check the **Statistics Window** for memory usage:
+
+```plaintext
+ROM used:   4892/32768 bytes (15%)
+RAM used:   156/2048 bytes (8%)
+```
+
+<Tip>
+  Use the `.tre` (call tree) file to analyze which functions consume the most memory. Open `Prueba Ccs.tre` in a text editor to see the function hierarchy and stack usage.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Simulate in Proteus" icon="play" href="./proteus-simulation">
+    Load the HEX file into Proteus for testing without hardware
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="./troubleshooting">
+    Solutions for common runtime issues
+  </Card>
+</CardGroup>

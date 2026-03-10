@@ -1,0 +1,324 @@
+---
+title: Software Setup
+description: Step-by-step guide to installing and configuring the development environment for the Number Base Converter
+---
+
+## Overview
+
+This guide walks you through setting up the complete software development environment for the Number Base Converter project, including compiler installation, simulation software, and required libraries.
+
+## Development Environment
+
+The project requires two main software components:
+
+1. **CCS C Compiler** - For compiling the embedded C code
+2. **Proteus Design Suite** - For circuit simulation and testing
+
+## CCS C Compiler Installation
+
+<Steps>
+  <Step title="Download CCS C Compiler">
+    Download the CCS C Compiler for PIC microcontrollers from the official CCS website. The project requires support for the PIC18F4550 microcontroller.
+    
+    <Note>
+      This project uses CCS-specific compiler directives and libraries. Other compilers like MPLAB XC8 are not compatible without code modifications.
+    </Note>
+  </Step>
+  
+  <Step title="Install the Compiler">
+    Run the installer and follow the installation wizard:
+    
+    - Select the installation directory (default: `C:\Program Files (x86)\PICC`)
+    - Choose the device families to install (ensure PIC18 is selected)
+    - Complete the installation process
+  </Step>
+  
+  <Step title="Activate License">
+    Launch the CCS C Compiler IDE and activate your license. A demo version may be available for evaluation purposes.
+  </Step>
+  
+  <Step title="Verify Installation">
+    Open the compiler and verify that PIC18F4550 is listed in the supported devices.
+  </Step>
+</Steps>
+
+## Proteus Design Suite Installation
+
+<Steps>
+  <Step title="Download Proteus">
+    Download Proteus Design Suite (Professional or higher) which includes:
+    - ISIS schematic capture
+    - ARES PCB layout
+    - VSM simulation for PIC microcontrollers
+  </Step>
+  
+  <Step title="Install Proteus">
+    Run the installer with default settings. Ensure the PIC18 simulation models are included in the installation.
+  </Step>
+  
+  <Step title="Configure Simulation Settings">
+    After installation, configure Proteus for optimal simulation:
+    
+    - Enable real-time simulation mode
+    - Set appropriate simulation speed
+    - Configure source code debugging if needed
+  </Step>
+</Steps>
+
+<Warning>
+  The Proteus project file `Proy SD.pdsprj` is included in the source code. You'll need a compatible version of Proteus to open and simulate the design.
+</Warning>
+
+## Required Libraries
+
+The Number Base Converter uses three critical libraries that must be available in your CCS C compiler installation:
+
+### Library Files
+
+<CardGroup cols={3}>
+  <Card title="hdm64gs12.c" icon="display">
+    LCD display driver for the HDM64GS12 graphical LCD module
+  </Card>
+  
+  <Card title="graphics.c" icon="paintbrush">
+    Graphics functions for rendering text and shapes on the LCD
+  </Card>
+  
+  <Card title="kbd4x4.c" icon="keyboard">
+    Matrix keypad driver for 4x4 keypad input handling
+  </Card>
+</CardGroup>
+
+### Library Configuration
+
+The main program includes these libraries in the following order:
+
+```c
+#include <18f4550.h>
+#use delay(clock=8Mhz)
+#include <hdm64gs12.c>  // LCD driver
+#include <graphics.c>   // Graphics functions
+#define use_portb_kbd TRUE
+#include <kbd4x4.c>     // Keypad driver
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+```
+
+<Note>
+  The `use_portb_kbd` definition **must** be set before including `kbd4x4.c` to configure the keypad on Port B.
+</Note>
+
+### Installing Libraries
+
+<Steps>
+  <Step title="Locate CCS Library Folder">
+    Navigate to your CCS C compiler installation directory, typically:
+    
+    ```bash
+    C:\Program Files (x86)\PICC\Drivers\
+    ```
+  </Step>
+  
+  <Step title="Add Custom Libraries">
+    Copy the following library files to the Drivers folder:
+    
+    - `hdm64gs12.c`
+    - `graphics.c`
+    - `kbd4x4.c` (included in source code)
+    
+    <Warning>
+      If `hdm64gs12.c` and `graphics.c` are not available in the standard CCS distribution, you may need to obtain them from the LCD manufacturer or compatible sources.
+    </Warning>
+  </Step>
+  
+  <Step title="Verify Library Access">
+    Create a test project and verify that the compiler can find the libraries by attempting to compile a simple include statement.
+  </Step>
+</Steps>
+
+## Project Configuration
+
+### Clock Configuration
+
+The project is configured to run at **8MHz clock frequency**:
+
+```c
+#use delay(clock=8Mhz)
+```
+
+<CardGroup cols={2}>
+  <Card title="Hardware Oscillator">
+    Use an 8MHz crystal oscillator connected to OSC1/OSC2 pins with two 22pF load capacitors.
+  </Card>
+  
+  <Card title="Simulation Settings">
+    In Proteus, set the PIC18F4550 clock frequency to 8MHz in the component properties.
+  </Card>
+</CardGroup>
+
+### Compiler Settings
+
+<Tabs>
+  <Tab title="Standard Configuration">
+    Use these compiler settings for normal operation:
+    
+    ```c
+    Device: PIC18F4550
+    Clock: 8MHz
+    Optimization: Default (Level 9)
+    ```
+  </Tab>
+  
+  <Tab title="Debug Configuration">
+    For debugging with Proteus or hardware debugger:
+    
+    ```c
+    Device: PIC18F4550
+    Clock: 8MHz
+    Optimization: None (Level 0)
+    Debug: Enabled
+    ```
+  </Tab>
+</Tabs>
+
+## Creating Your First Build
+
+<Steps>
+  <Step title="Open CCS C Compiler">
+    Launch the CCS C IDE and create a new project or open the existing `Prueba Ccs.c` file.
+  </Step>
+  
+  <Step title="Configure Device">
+    Set the target device to PIC18F4550 in the project settings.
+  </Step>
+  
+  <Step title="Verify Includes">
+    Ensure all library files are accessible and included correctly:
+    
+    ```c
+    #include <18f4550.h>
+    #use delay(clock=8Mhz)
+    #include <hdm64gs12.c>
+    #include <graphics.c>
+    #define use_portb_kbd TRUE
+    #include <kbd4x4.c>
+    ```
+  </Step>
+  
+  <Step title="Compile Project">
+    Click the Compile button or press F9. The compiler should generate a `.hex` file without errors.
+    
+    Expected output files:
+    - `Prueba Ccs.hex` - Compiled firmware
+    - `Prueba Ccs.lst` - Assembly listing
+    - `Prueba Ccs.sym` - Symbol file
+  </Step>
+</Steps>
+
+## Loading the Simulation
+
+### Opening the Proteus Project
+
+<Steps>
+  <Step title="Launch Proteus ISIS">
+    Open Proteus Design Suite and select ISIS (schematic capture).
+  </Step>
+  
+  <Step title="Open Project File">
+    Load the provided project file:
+    
+    ```
+    File → Open Project → "Proy SD.pdsprj"
+    ```
+  </Step>
+  
+  <Step title="Load HEX File">
+    Right-click the PIC18F4550 component in the schematic and select "Edit Properties". In the Program File field, browse to your compiled `.hex` file.
+  </Step>
+  
+  <Step title="Run Simulation">
+    Click the Play button at the bottom of the screen to start the simulation. The LCD should display the main menu:
+    
+    ```
+    Menu de Conversiones
+    1 Dec a Bin-Oct-Hex
+    2 Bin a Gray
+    3 Gray a Bin
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The simulation allows you to test all conversion functions without physical hardware. Use the virtual keypad in Proteus to interact with the system.
+</Note>
+
+## Keypad Driver Configuration
+
+The keypad driver (`kbd4x4.c`) is configured with these important settings:
+
+```c
+#define use_portb_kbd TRUE  // Use Port B for keypad
+#define KBD_DEBOUNCE_FACTOR 33  // Debounce timing
+
+// Keypad layout
+char const KEYS[4][4] = {{'1','2','3','A'},
+                         {'4','5','6','B'},
+                         {'7','8','9','C'},
+                         {'*','0','#','D'}};
+```
+
+### Initialization Sequence
+
+The main program initializes hardware in this order:
+
+```c
+void main(){
+   kbd_init();        // Initialize keypad
+   glcd_init(on);     // Initialize LCD
+   glcd_fillscreen(0); // Clear LCD
+   // ... rest of program
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Compiler can't find library files">
+    Ensure all library files (`hdm64gs12.c`, `graphics.c`, `kbd4x4.c`) are in the CCS Drivers folder or in the same directory as your main `.c` file.
+  </Accordion>
+  
+  <Accordion title="LCD not displaying in simulation">
+    Verify that:
+    - The LCD model in Proteus is HDM64GS12 or KS0108-compatible
+    - The clock frequency is set to 8MHz
+    - The initialization sequence runs properly
+  </Accordion>
+  
+  <Accordion title="Keypad not responding">
+    Check that:
+    - `use_portb_kbd` is defined as TRUE before including `kbd4x4.c`
+    - Pull-up resistors are present on column pins (RB4-RB7)
+    - The debounce factor is appropriate for your call frequency
+  </Accordion>
+  
+  <Accordion title="Compilation errors with delays">
+    Ensure the clock frequency directive is correct:
+    ```c
+    #use delay(clock=8Mhz)
+    ```
+    This must be set for `delay_ms()` functions to work properly.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+With your development environment configured, you're ready to:
+
+1. Explore the conversion algorithms in the [API Functions](/reference/api-functions) reference
+2. Learn how to use the system in the [Operation Guide](/user-guide/operation)
+3. Modify and extend the code for your own applications
+
+<Note>
+  For hardware deployment, you'll need a PIC programmer such as PICkit 3 or ICD 3 to flash the `.hex` file to the physical PIC18F4550 microcontroller.
+</Note>

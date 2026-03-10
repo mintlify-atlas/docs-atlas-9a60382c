@@ -1,0 +1,261 @@
+---
+title: Device Operation
+description: Learn how to operate the Number Base Converter device, navigate menus, and perform conversions
+icon: "play"
+---
+
+## Power On Sequence
+
+When you power on the Number Base Converter, the device initializes the following components:
+
+1. **Keypad Interface** - The 4x4 matrix keypad is initialized and ready for input
+2. **Graphic LCD Display** - The 128x64 graphical LCD initializes and clears
+3. **Main Menu** - The conversion menu appears automatically
+
+<Note>
+The device runs on an 8MHz clock and uses Port B for keypad communication. Ensure proper power supply before operation.
+</Note>
+
+## Main Menu Structure
+
+Upon startup, the device displays the main conversion menu with the following options:
+
+<CardGroup cols={1}>
+  <Card title="Menu de Conversiones" icon="list">
+    The main menu title displayed at the top of the LCD screen
+  </Card>
+</CardGroup>
+
+### Available Conversion Modes
+
+The menu presents three conversion options:
+
+```text
+Menu de Conversiones
+
+1 Dec a Bin-Oct-Hex
+2 Bin a Gray
+3 Gray a Bin
+```
+
+<Steps>
+  <Step title="Decimal to Binary-Octal-Hexadecimal">
+    Press **1** to convert a decimal number to binary, octal, and hexadecimal formats simultaneously
+    
+    ```c
+    // Menu text from source code
+    char textDec[40] = "1 Dec a Bin-Oct-Hex";
+    ```
+  </Step>
+  
+  <Step title="Binary to Gray Code">
+    Press **2** to convert a binary number to Gray code representation
+    
+    ```c
+    // Menu text from source code
+    char textBin[40] = "2 Bin a Gray";
+    ```
+  </Step>
+  
+  <Step title="Gray Code to Binary">
+    Press **3** to convert Gray code back to binary representation
+    
+    ```c
+    // Menu text from source code
+    char textGray[40] = "3 Gray a Bin";
+    ```
+  </Step>
+</Steps>
+
+## Selecting Conversion Modes
+
+The device uses a simple keypad-based selection system:
+
+### Selection Process
+
+1. **Wait for Input** - The system continuously polls the keypad for a key press
+2. **Key Detection** - When you press 1, 2, or 3, the system captures the input
+3. **Mode Activation** - The selected conversion mode activates immediately
+
+```c
+// Selection logic from Prueba Ccs.c:222-229
+do{
+    choice = kbd_getc();
+} while(choice==0);
+
+val=choice-48;  // Convert ASCII to numeric value
+
+switch (val) {
+    case 1:  // Decimal conversion mode
+    case 2:  // Binary to Gray mode
+    case 3:  // Gray to Binary mode
+}
+```
+
+<Warning>
+Only keys **1**, **2**, and **3** are valid menu selections. Other keys will be ignored at the main menu.
+</Warning>
+
+## Reading Results on LCD
+
+The graphic LCD displays results in a clear, organized format:
+
+### Display Layout
+
+<Tabs>
+  <Tab title="Decimal Conversion">
+    After entering a decimal number and pressing `#`, the LCD displays:
+    
+    ```text
+    Binario:
+    [binary result]
+    
+    Octal:
+    [octal result]
+    
+    Hexadecimal:
+    [hexadecimal result]
+    ```
+    
+    Each result appears with a 1-second delay for easy reading.
+  </Tab>
+  
+  <Tab title="Binary to Gray">
+    After entering a binary number and pressing `#`:
+    
+    ```text
+    Gray Code:
+    [gray code result]
+    ```
+    
+    The result displays immediately on screen.
+  </Tab>
+  
+  <Tab title="Gray to Binary">
+    After entering Gray code and pressing `#`:
+    
+    ```text
+    Binary Code:
+    [binary result]
+    ```
+    
+    The conversion result is shown instantly.
+  </Tab>
+</Tabs>
+
+### Display Characteristics
+
+- **Font Size**: 5x7 pixel font for clear readability
+- **Text Position**: Results are positioned with 4-pixel left margin
+- **Auto-Clear**: Screen clears between operations
+- **Sequential Display**: Multi-result conversions show each result with timed delays
+
+## Step-by-Step Usage Workflow
+
+Follow this complete workflow to perform conversions:
+
+<Steps>
+  <Step title="Power On and View Menu">
+    Turn on the device. The main menu appears automatically:
+    
+    ```text
+    Menu de Conversiones
+    1 Dec a Bin-Oct-Hex
+    2 Bin a Gray
+    3 Gray a Bin
+    ```
+  </Step>
+  
+  <Step title="Select Conversion Mode">
+    Press **1**, **2**, or **3** on the keypad to select your desired conversion type.
+    
+    The LCD clears and displays the selected mode name at the top.
+  </Step>
+  
+  <Step title="Enter Input Value">
+    - Type your number using keys **0-9**
+    - Each digit appears on screen as you type
+    - Maximum input length: 19 characters
+    - Only numeric characters are accepted
+    
+    ```c
+    // Input validation from readInput() function
+    if (key >= '0' && key <= '9') {
+        input[index++] = key;
+        glcd_text57(4 + (index * 6), 32, &key, 1, on);
+    }
+    ```
+  </Step>
+  
+  <Step title="Confirm Input">
+    Press **#** to confirm your input and trigger the conversion.
+    
+    <Info>
+    The `#` key acts as the "Enter" or "Confirm" button throughout the application.
+    </Info>
+  </Step>
+  
+  <Step title="View Results">
+    The conversion results display on the LCD:
+    
+    - **Decimal conversion**: Shows binary, octal, and hexadecimal sequentially
+    - **Binary to Gray**: Shows Gray code result
+    - **Gray to Binary**: Shows binary result
+    
+    Results remain visible for at least 1 second.
+  </Step>
+  
+  <Step title="Return to Menu">
+    After viewing results, the device automatically returns to the main menu.
+    
+    You can immediately perform another conversion by selecting a new mode.
+  </Step>
+</Steps>
+
+## Operation Tips
+
+<CardGroup cols={2}>
+  <Card title="Input Validation" icon="check">
+    Only digits 0-9 are accepted during number entry. Invalid keys are automatically filtered out.
+  </Card>
+  
+  <Card title="Immediate Feedback" icon="eye">
+    Each keystroke appears on the LCD immediately, providing real-time feedback as you type.
+  </Card>
+  
+  <Card title="Automatic Reset" icon="rotate">
+    The device returns to the main menu after each conversion, ready for the next operation.
+  </Card>
+  
+  <Card title="Continuous Operation" icon="infinity">
+    The main loop runs indefinitely - the device is always ready to accept new conversions.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="LCD shows no text after power on">
+    - Check power supply connection
+    - Verify LCD initialization (should clear screen on startup)
+    - Ensure proper clock configuration (8MHz)
+  </Accordion>
+  
+  <Accordion title="Keypad not responding">
+    - Confirm keypad is properly connected to Port B
+    - Check that pull-up resistors are in place on column pins
+    - Verify kbd_init() executed during startup
+  </Accordion>
+  
+  <Accordion title="Wrong conversion results">
+    - Ensure you pressed `#` to confirm input
+    - Verify you entered only numeric digits
+    - Check that input is within valid range for the conversion type
+  </Accordion>
+  
+  <Accordion title="Display shows corrupted text">
+    - The LCD may need reinitialization
+    - Power cycle the device
+    - Check for loose connections to the LCD module
+  </Accordion>
+</AccordionGroup>

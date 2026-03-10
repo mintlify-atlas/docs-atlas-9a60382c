@@ -1,0 +1,738 @@
+---
+title: 'Troubleshooting'
+description: 'Solutions to common issues in building and running the Number Base Converter'
+icon: 'wrench'
+---
+
+## Overview
+
+This guide provides solutions to the most common problems encountered when building, simulating, or running the Number Base Converter on hardware.
+
+## Compilation Errors
+
+<AccordionGroup>
+  <Accordion title="Error: Cannot open include file 'hdm64gs12.c'" icon="file-slash">
+    **Error Message**:
+    ```
+    *** Error 18 "Prueba Ccs.c" Line 3(1,1): Cannot open include file "hdm64gs12.c"
+    ```
+    
+    **Cause**: The LCD graphics driver library is not found in the compiler's search path.
+    
+    **Solutions**:
+    
+    1. **Copy library to project directory** (Recommended):
+       ```bash
+       # Place hdm64gs12.c in the same folder as Prueba Ccs.c
+       ```
+    
+    2. **Add to CCS Drivers folder**:
+       ```
+       C:\Program Files (x86)\PICC\Drivers\hdm64gs12.c
+       ```
+    
+    3. **Use absolute path**:
+       ```c
+       #include "C:\Path\To\Your\Project\hdm64gs12.c"
+       ```
+    
+    4. **Check filename case**: Ensure the filename matches exactly (some systems are case-sensitive).
+  </Accordion>
+  
+  <Accordion title="Error: Cannot open include file 'graphics.c'" icon="image-slash">
+    **Error Message**:
+    ```
+    *** Error 18 "Prueba Ccs.c" Line 4(1,1): Cannot open include file "graphics.c"
+    ```
+    
+    **Cause**: Graphics functions library is missing.
+    
+    **Solutions**:
+    
+    1. Verify `graphics.c` is in the same directory as `hdm64gs12.c`
+    2. Ensure `graphics.c` is included AFTER `hdm64gs12.c` (line 4)
+    3. Some LCD driver packages bundle graphics functions into a single file - check if your `hdm64gs12.c` already includes these functions
+    
+    <Warning>
+      The order of includes matters! Always include `hdm64gs12.c` before `graphics.c`.
+    </Warning>
+  </Accordion>
+  
+  <Accordion title="Error: Cannot open include file 'kbd4x4.c'" icon="keyboard">
+    **Error Message**:
+    ```
+    *** Error 18 "Prueba Ccs.c" Line 6(1,1): Cannot open include file "kbd4x4.c"
+    ```
+    
+    **Cause**: The custom keypad driver is not found.
+    
+    **Solutions**:
+    
+    1. Ensure `KBD4x4.c` is in the project directory
+    2. Rename to lowercase if necessary: `kbd4x4.c`
+    3. The project includes a modified version - use the provided `KBD4x4.c` file
+    
+    **Fix**:
+    ```c Prueba Ccs.c:5-6
+    #define use_portb_kbd TRUE
+    #include <kbd4x4.c>  // Must exist in project folder
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Undefined identifier 'glcd_init'" icon="question">
+    **Error Message**:
+    ```
+    *** Error 12 "Prueba Ccs.c" Line 203(4,1): Undefined identifier glcd_init
+    ```
+    
+    **Cause**: LCD driver not properly included or incorrect driver for your LCD model.
+    
+    **Solutions**:
+    
+    1. Verify `hdm64gs12.c` defines `glcd_init()` function
+    2. Check you're using the correct LCD driver for HDM64GS12 (128x64 with KS0108 controller)
+    3. Ensure the driver is included before calling the function
+    
+    **Verify driver functions**:
+    ```c
+    // Required functions from hdm64gs12.c:
+    glcd_init(on)          // Initialize LCD
+    glcd_fillscreen(0)     // Clear screen
+    glcd_text57(x,y,text,size,on)  // Display text
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Undefined identifier 'kbd_getc'" icon="keyboard">
+    **Error Message**:
+    ```
+    *** Error 12 "Prueba Ccs.c" Line 223(13,1): Undefined identifier kbd_getc
+    ```
+    
+    **Cause**: Keypad driver not included or `use_portb_kbd` not defined.
+    
+    **Solutions**:
+    
+    1. Ensure the define appears BEFORE the include:
+       ```c Prueba Ccs.c:5-6
+       #define use_portb_kbd TRUE
+       #include <kbd4x4.c>
+       ```
+    
+    2. Verify `kbd4x4.c` contains the `kbd_getc()` function (around line 95)
+    
+    3. Check `kbd_init()` is called in `main()` before using keypad:
+       ```c Prueba Ccs.c:202
+       kbd_init(); // Must be called first
+       ```
+  </Accordion>
+  
+  <Accordion title="Error: Not enough ROM" icon="memory">
+    **Error Message**:
+    ```
+    *** Error 71: Out of ROM, A segment or the program is too large
+    ```
+    
+    **Cause**: Code exceeds PIC18F4550's 32KB program memory.
+    
+    **Solutions**:
+    
+    1. **Enable compiler optimization**:
+       ```c
+       #include <18f4550.h>
+       #opt 9  // Maximum optimization
+       ```
+    
+    2. **Reduce string constants**: Store in ROM instead of RAM:
+       ```c
+       // Before (uses RAM):
+       char textTitle[40] = "Menu de Conversiones";
+       
+       // After (uses ROM):
+       const char textTitle[] = "Menu de Conversiones";
+       ```
+    
+    3. **Reduce buffer sizes**:
+       ```c
+       // Before:
+       char num[20];
+       
+       // After (if you only need 10 digits):
+       char num[11];  // 10 chars + null terminator
+       ```
+    
+    4. **Remove unused functions**: Comment out conversion functions you don't need.
+  </Accordion>
+  
+  <Accordion title="Error: Not enough RAM" icon="microchip">
+    **Error Message**:
+    ```
+    *** Error 74: Not enough RAM for all variables
+    ```
+    
+    **Cause**: Variables exceed PIC18F4550's 2KB RAM.
+    
+    **Solutions**:
+    
+    1. **Use const for read-only data**:
+       ```c
+       // Move to ROM (flash memory):
+       const char *text1 = "Ingrese Decimal:";
+       const char *text2 = "Binario:";
+       ```
+    
+    2. **Reduce global buffer sizes**:
+       ```c Prueba Ccs.c:11-14
+       // Reduce if possible:
+       char prueba[20];  // Change to [10] if sufficient
+       char num[20];     // Change to [12] for max input
+       ```
+    
+    3. **Reuse buffers**: Share buffers between functions that don't run simultaneously:
+       ```c
+       // Use one buffer for all conversions:
+       char conversion_buffer[20];
+       ```
+    
+    4. **Use local variables**: Declare inside functions instead of global when possible.
+  </Accordion>
+  
+  <Accordion title="Warning: #use delay not specified" icon="clock">
+    **Warning Message**:
+    ```
+    *** Warning 224: No #use delay statement - assuming 4MHz clock
+    ```
+    
+    **Cause**: Missing or incorrectly placed clock configuration.
+    
+    **Solution**:
+    
+    Ensure this line appears early in the code (line 2):
+    ```c Prueba Ccs.c:1-2
+    #include <18f4550.h>
+    #use delay(clock=8Mhz)  // Must match your crystal frequency
+    ```
+    
+    <Warning>
+      If you're using a different crystal (e.g., 20MHz), update this value to match your hardware or timing will be incorrect.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## LCD Display Issues
+
+<AccordionGroup>
+  <Accordion title="LCD shows nothing (blank screen)" icon="square">
+    **Symptoms**: LCD backlight on, but no text or graphics visible.
+    
+    **Hardware Checks**:
+    
+    1. **Contrast adjustment**:
+       - Adjust the contrast pot (usually on Vo/V0 pin)
+       - Should be around 0.5V to 1V
+       - If too high or too low, display appears blank
+    
+    2. **Power supply**:
+       ```
+       VDD = +5V
+       VSS = GND
+       Measure with multimeter
+       ```
+    
+    3. **Data connections** (Port D):
+       ```
+       DB0 → RD0
+       DB1 → RD1
+       ...
+       DB7 → RD7
+       ```
+    
+    4. **Control signals** (Port E or as configured):
+       ```
+       RS  → Control pin
+       R/W → Control pin
+       E   → Control pin
+       CS1 → Chip select 1
+       CS2 → Chip select 2
+       RST → Reset pin
+       ```
+    
+    **Software Checks**:
+    
+    1. Verify LCD initialization:
+       ```c Prueba Ccs.c:203-204
+       glcd_init(on);      // Initialize LCD
+       glcd_fillscreen(0); // Clear screen
+       ```
+    
+    2. Add test pattern after init:
+       ```c
+       glcd_init(on);
+       glcd_fillscreen(0);
+       glcd_text57(0, 0, "TEST", 1, on);  // Should show "TEST"
+       delay_ms(5000);
+       ```
+  </Accordion>
+  
+  <Accordion title="LCD shows garbage characters" icon="icons">
+    **Symptoms**: Random pixels or unreadable characters.
+    
+    **Causes and Solutions**:
+    
+    1. **Wrong clock frequency**:
+       ```c
+       #use delay(clock=8Mhz)  // Must match hardware
+       ```
+       If using 20MHz crystal, change to `clock=20Mhz`
+    
+    2. **Initialization timing**: Add delay before LCD init:
+       ```c
+       void main() {
+           delay_ms(100);  // Wait for power stabilization
+           kbd_init();
+           glcd_init(on);
+           // ...
+       }
+       ```
+    
+    3. **Incorrect LCD driver**: Verify you're using `hdm64gs12.c` for HDM64GS12 LCD
+    
+    4. **Loose connections**: Check all data and control wire connections
+  </Accordion>
+  
+  <Accordion title="LCD only shows half the screen" icon="table-columns">
+    **Symptoms**: Left or right half of LCD is blank.
+    
+    **Cause**: Missing or incorrect chip select signals (CS1/CS2).
+    
+    **Solution**:
+    
+    The HDM64GS12 uses two KS0108 controllers:
+    - CS1 controls left 64 pixels
+    - CS2 controls right 64 pixels
+    
+    1. Verify CS1 and CS2 connections in `hdm64gs12.c`
+    2. Check both chip select lines toggle during operation
+    3. Ensure both controller chips are powered
+    
+    **Debug test**:
+    ```c
+    glcd_text57(0, 32, "LEFT", 1, on);   // Should appear on left side
+    glcd_text57(70, 32, "RIGHT", 1, on); // Should appear on right side
+    ```
+  </Accordion>
+  
+  <Accordion title="Text appears in wrong position" icon="location-crosshairs">
+    **Cause**: Incorrect X/Y coordinates in `glcd_text57()` calls.
+    
+    **Understanding coordinates**:
+    ```c
+    glcd_text57(x, y, text, size, on);
+    //          ^  ^  
+    //          |  +-- Y: 0-63 (vertical pixels)
+    //          +----- X: 0-127 (horizontal pixels)
+    ```
+    
+    **Screen layout**:
+    ```
+    (0,0)                        (127,0)
+       +---------------------------+
+       |                           |
+       |       128 x 64            |
+       |                           |
+       +---------------------------+
+    (0,63)                      (127,63)
+    ```
+    
+    **Fix positioning**:
+    ```c Prueba Ccs.c:218-221
+    glcd_text57(0, 0, textTitle, 1, on);   // Top of screen
+    glcd_text57(4, 16, textDec, 1, on);    // Below title
+    glcd_text57(4, 32, textBin, 1, on);    // Middle
+    glcd_text57(4, 50, textGray, 1, on);   // Lower
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Keypad Issues
+
+<AccordionGroup>
+  <Accordion title="Keypad doesn't respond" icon="keyboard">
+    **Symptoms**: No response when pressing keys.
+    
+    **Software Checks**:
+    
+    1. **Verify initialization**:
+       ```c Prueba Ccs.c:202
+       kbd_init(); // Must be called in main()
+       ```
+    
+    2. **Verify port configuration**:
+       ```c Prueba Ccs.c:5
+       #define use_portb_kbd TRUE  // Must be defined BEFORE include
+       ```
+    
+    3. **Check polling loop**:
+       ```c Prueba Ccs.c:222-224
+       do {
+           choice = kbd_getc();
+       } while(choice == 0);  // Waits for key press
+       ```
+    
+    **Hardware Checks**:
+    
+    1. **Pull-up resistors on columns**:
+       - RB4, RB5, RB6, RB7 need 10kΩ pull-ups to VDD
+       - Required for proper keypad scanning
+    
+    2. **Wiring verification**:
+       ```
+       Rows:    RB0, RB1, RB2, RB3
+       Columns: RB4, RB5, RB6, RB7
+       ```
+    
+    3. **Test with multimeter**:
+       - Columns should read 5V when no key pressed
+       - Should go to 0V when row + column key pressed
+  </Accordion>
+  
+  <Accordion title="Keys register multiple times" icon="clone">
+    **Symptoms**: One key press produces multiple inputs.
+    
+    **Cause**: Mechanical bounce or incorrect debounce factor.
+    
+    **Solution**:
+    
+    Adjust debounce factor in `kbd4x4.c`:
+    ```c kbd4x4.c:87-89
+    #define KBD_DEBOUNCE_FACTOR 33
+    // Set to apx n/333 where n = kbd_getc calls per second
+    ```
+    
+    If you call `kbd_getc()` very frequently, increase this value:
+    ```c
+    #define KBD_DEBOUNCE_FACTOR 50  // For faster polling
+    ```
+    
+    **Alternative**: Add delay in main loop:
+    ```c
+    choice = kbd_getc();
+    if (choice != 0) {
+        delay_ms(50);  // Debounce delay
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Wrong keys detected" icon="shuffle">
+    **Symptoms**: Pressing '1' shows '4', or other incorrect mappings.
+    
+    **Cause**: Keypad wiring doesn't match the key layout in code.
+    
+    **Solution**:
+    
+    1. **Check key layout** in `kbd4x4.c`:
+       ```c kbd4x4.c:82-85
+       char const KEYS[4][4] = {
+           {'1','2','3','A'},  // Row 0 (RB0)
+           {'4','5','6','B'},  // Row 1 (RB1)
+           {'7','8','9','C'},  // Row 2 (RB2)
+           {'*','0','#','D'}   // Row 3 (RB3)
+       };
+       ```
+    
+    2. **Verify physical keypad layout** matches this mapping
+    
+    3. **If using different keypad**, update the KEYS array to match your hardware
+    
+    4. **Test each position**:
+       ```c
+       // Add debug output:
+       choice = kbd_getc();
+       if (choice != 0) {
+           glcd_text57(0, 0, &choice, 1, on);  // Show pressed key
+       }
+       ```
+  </Accordion>
+  
+  <Accordion title="Only some keys work" icon="grip">
+    **Symptoms**: Some rows or columns don't respond.
+    
+    **Cause**: Bad connection or incorrect TRIS configuration.
+    
+    **Checks**:
+    
+    1. **Test each row and column individually** with multimeter in continuity mode
+    
+    2. **Verify port configuration**:
+       - Rows should be set as inputs (high impedance when not scanning)
+       - Columns are driven low one at a time during scanning
+    
+    3. **Check for shorts**: Ensure no adjacent pins are shorted together
+    
+    4. **Verify pull-ups**: Each column needs its own 10kΩ resistor to VDD
+  </Accordion>
+</AccordionGroup>
+
+## Conversion Algorithm Issues
+
+<AccordionGroup>
+  <Accordion title="Incorrect decimal to binary conversion" icon="binary">
+    **Symptoms**: Binary result is wrong or reversed.
+    
+    **Common Issues**:
+    
+    1. **Reversed output**: The algorithm builds binary backward
+       ```c Prueba Ccs.c:57-60
+       // Bit reversal loop:
+       for (j = 0; j < i; j++) {
+           bin[j] = temp[i - j - 1];  // Reverses the bits
+       }
+       ```
+       This is correct - don't modify this loop.
+    
+    2. **Null terminator missing**:
+       ```c Prueba Ccs.c:61
+       bin[i] = '\0';  // Essential - marks end of string
+       ```
+    
+    3. **Buffer too small**: Ensure binary buffer is large enough
+       ```c
+       char bin[20];  // Needs 17 chars for max int16 (65535 = 16 bits + null)
+       ```
+    
+    **Test cases**:
+    ```c
+    // Expected results:
+    decimal_binary(0, bin);    // "0"
+    decimal_binary(1, bin);    // "1"
+    decimal_binary(15, bin);   // "1111"
+    decimal_binary(255, bin);  // "11111111"
+    ```
+  </Accordion>
+  
+  <Accordion title="Hexadecimal shows lowercase instead of uppercase" icon="hashtag">
+    **Symptoms**: Results show 'a-f' instead of 'A-F'.
+    
+    **Solution**:
+    
+    The code uses uppercase hex characters:
+    ```c Prueba Ccs.c:92
+    char hex_chars[] = "0123456789ABCDEF";
+    ```
+    
+    To change to lowercase, modify to:
+    ```c
+    char hex_chars[] = "0123456789abcdef";
+    ```
+  </Accordion>
+  
+  <Accordion title="Gray code conversion produces wrong results" icon="wave-square">
+    **Symptoms**: Binary ↔ Gray conversion incorrect.
+    
+    **Verify algorithm**:
+    
+    Binary to Gray:
+    ```c Prueba Ccs.c:151-156
+    void binaryToGray(char bin[], char gray[], int n) {
+        gray[0] = bin[0];  // MSB stays same
+        for (int i = 1; i < n; i++) {
+            // XOR current bit with previous bit
+            gray[i] = (bin[i] == bin[i-1]) ? '0' : '1';
+        }
+        gray[n] = '\0';
+    }
+    ```
+    
+    Gray to Binary:
+    ```c Prueba Ccs.c:159-164
+    void grayToBinary(char gray[], char bin[], int n) {
+        bin[0] = gray[0];  // MSB stays same
+        for (int i = 1; i < n; i++) {
+            // XOR with previous binary bit
+            bin[i] = (gray[i] == '0') ? bin[i-1] : (bin[i-1] == '0' ? '1' : '0');
+        }
+        bin[n] = '\0';
+    }
+    ```
+    
+    **Test the round-trip**:
+    ```
+    Binary: 1011
+    → Gray: 1110
+    → Binary: 1011 ✓ (should match original)
+    ```
+  </Accordion>
+  
+  <Accordion title="Input not captured correctly" icon="pen">
+    **Symptoms**: Entered numbers don't appear or are wrong.
+    
+    **Check input function**:
+    
+    ```c Prueba Ccs.c:23-39
+    void readInput(char *input, int maxLength) {
+        char key;
+        int index = 0;
+        while (index < maxLength - 1) {
+            key = kbd_getc();
+            if (key != 0) {
+                if (key == '#') {  // '#' ends input
+                    break;
+                }
+                if (key >= '0' && key <= '9') {  // Only digits
+                    input[index++] = key;
+                    glcd_text57(4 + (index * 6), 32, &key, 1, on);
+                }
+            }
+        }
+        input[index] = '\0';  // Null-terminate
+    }
+    ```
+    
+    **Common issues**:
+    1. Missing `#` press to terminate input
+    2. Pressing non-numeric keys (ignored by filter)
+    3. Buffer overflow if entering >19 characters
+  </Accordion>
+</AccordionGroup>
+
+## Hardware-Specific Issues
+
+<AccordionGroup>
+  <Accordion title="Circuit doesn't start after programming" icon="power-off">
+    **Checks**:
+    
+    1. **Power supply**:
+       - Measure VDD: Should be 4.5-5.5V
+       - Check current draw: ~50-150mA typical
+    
+    2. **Oscillator**:
+       - Verify 8MHz crystal is connected to OSC1/OSC2
+       - Check for 22pF capacitors on both crystal pins to ground
+       - Measure with oscilloscope: should see ~8MHz signal
+    
+    3. **Reset pin (MCLR)**:
+       - Must have pull-up resistor (10kΩ) to VDD
+       - Should measure ~5V when running
+       - If pulled low, PIC stays in reset
+    
+    4. **Fuse settings**: Verify fuses match hardware:
+       ```c
+       #fuses HS       // High-speed crystal (8MHz)
+       #fuses NOWDT    // Watchdog timer OFF
+       #fuses NOLVP    // No low-voltage programming
+       ```
+  </Accordion>
+  
+  <Accordion title="Works in Proteus but not on real hardware" icon="microchip">
+    **Common differences**:
+    
+    1. **Power-up delay**: Add initialization delay
+       ```c
+       void main() {
+           delay_ms(500);  // Wait for power stabilization
+           kbd_init();
+           glcd_init(on);
+           // ...
+       }
+       ```
+    
+    2. **LCD contrast**: Adjust Vo voltage (0.5V - 1V)
+    
+    3. **Decoupling capacitors**: Add 100nF ceramic caps on VDD pins close to IC
+    
+    4. **Pull-ups**: Real hardware needs physical pull-up resistors (Proteus adds automatically)
+    
+    5. **Clock source**: Verify crystal and load capacitors (22pF typical)
+  </Accordion>
+  
+  <Accordion title="Erratic behavior or random resets" icon="arrows-rotate">
+    **Causes**:
+    
+    1. **Power supply noise**:
+       - Add 100nF decoupling cap on each VDD pin
+       - Add 10µF bulk capacitor near power input
+       - Use regulated 5V supply (not USB directly)
+    
+    2. **Watchdog timer enabled**:
+       ```c
+       #fuses NOWDT  // Ensure WDT is disabled
+       ```
+    
+    3. **Brown-out reset**:
+       ```c
+       #fuses BROWNOUT  // Enable brown-out detection
+       ```
+       Or use external supervisor IC
+    
+    4. **EMI interference**:
+       - Keep crystal traces short
+       - Add ground plane
+       - Shield from LCD backlight inverter
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+<CardGroup cols={2}>
+  <Card title="Check Source Code" icon="code" href="https://github.com/AdrianoR05/Converter-Int-to-Bin-Oct-and-Hex">
+    Review the complete source code and circuit diagrams
+  </Card>
+  
+  <Card title="Build Guide" icon="book" href="./building">
+    Revisit compilation and build instructions
+  </Card>
+  
+  <Card title="Simulation Guide" icon="flask" href="./proteus-simulation">
+    Test in Proteus to isolate hardware issues
+  </Card>
+  
+  <Card title="Circuit Design" icon="screwdriver-wrench" href="/reference/circuit-design">
+    Verify circuit connections and components
+  </Card>
+</CardGroup>
+
+## Diagnostic Checklist
+
+Use this checklist to systematically troubleshoot issues:
+
+### Software
+- [ ] CCS C Compiler version 5.093 or later installed
+- [ ] All include files present (`hdm64gs12.c`, `graphics.c`, `kbd4x4.c`)
+- [ ] `use_portb_kbd` defined before `#include <kbd4x4.c>`
+- [ ] Clock set to 8MHz in code: `#use delay(clock=8Mhz)`
+- [ ] Project compiles with 0 errors
+- [ ] HEX file generated successfully
+
+### Hardware - Power
+- [ ] VDD = 5V ± 0.5V on all power pins
+- [ ] 100nF decoupling caps on each VDD pin
+- [ ] 10µF bulk capacitor near power input
+- [ ] Current draw reasonable (50-150mA)
+
+### Hardware - Oscillator
+- [ ] 8MHz crystal connected to OSC1/OSC2
+- [ ] 22pF capacitors on both crystal legs to ground
+- [ ] Crystal oscillating (check with oscilloscope)
+
+### Hardware - Reset
+- [ ] MCLR has 10kΩ pull-up to VDD
+- [ ] MCLR voltage = ~5V when running
+- [ ] Reset button (optional) connected correctly
+
+### Hardware - LCD
+- [ ] All data lines connected (DB0-DB7 to RD0-RD7)
+- [ ] All control lines connected (RS, R/W, E, CS1, CS2, RST)
+- [ ] Contrast adjusted (Vo = 0.5V to 1V)
+- [ ] Backlight powered (if applicable)
+
+### Hardware - Keypad
+- [ ] Rows connected to RB0-RB3
+- [ ] Columns connected to RB4-RB7
+- [ ] 10kΩ pull-ups on columns (RB4-RB7)
+- [ ] All keypad pins making good contact
+
+### Initialization
+- [ ] `kbd_init()` called before using keypad
+- [ ] `glcd_init(on)` called before LCD operations
+- [ ] Power-up delay added for real hardware
+
+If you've verified all items and still have issues, try running in Proteus simulation first to isolate whether the problem is software or hardware related.

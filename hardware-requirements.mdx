@@ -1,0 +1,165 @@
+---
+title: Hardware Requirements
+description: Complete hardware specifications and pin connections for the Number Base Converter system
+---
+
+## Overview
+
+The Number Base Converter is built around the PIC18F4550 microcontroller and requires specific hardware components to function properly. This page details all necessary components, their specifications, and pin connections.
+
+## Required Components
+
+<CardGroup cols={2}>
+  <Card title="PIC18F4550 Microcontroller" icon="microchip">
+    The main processing unit operating at 8MHz clock frequency. Handles all conversion algorithms and I/O operations.
+  </Card>
+  
+  <Card title="HDM64GS12 Graphical LCD" icon="display">
+    128x64 pixel graphical LCD display for rendering the user interface and displaying conversion results.
+  </Card>
+  
+  <Card title="4x4 Matrix Keypad" icon="keyboard">
+    16-key matrix keypad for user input, configured for numeric entry and function selection.
+  </Card>
+  
+  <Card title="Power Supply" icon="bolt">
+    Regulated 5V DC power supply for the microcontroller and peripheral components.
+  </Card>
+</CardGroup>
+
+## Microcontroller Specifications
+
+### PIC18F4550 Configuration
+
+The system uses the PIC18F4550 microcontroller with the following configuration:
+
+```c
+#include <18f4550.h>
+#use delay(clock=8Mhz)
+```
+
+<Note>
+  The system is configured to operate at **8MHz clock frequency**. Ensure your oscillator circuit matches this specification.
+</Note>
+
+**Key Features:**
+- 8-bit high-performance RISC architecture
+- 32KB Flash program memory
+- 2KB RAM
+- 40-pin DIP package
+- Multiple I/O ports (PORTA, PORTB, PORTD)
+
+## Pin Connections
+
+### 4x4 Matrix Keypad Interface
+
+The keypad is connected to **Port B** of the PIC18F4550 using the following pin mapping:
+
+```c
+// Keypad configured on Port B
+#define use_portb_kbd TRUE
+
+// Column Pins (Output)
+#define COL0 (1 << 4)  // RB4
+#define COL1 (1 << 5)  // RB5
+#define COL2 (1 << 6)  // RB6
+#define COL3 (1 << 7)  // RB7
+
+// Row Pins (Input)
+#define ROW0 (1 << 0)  // RB0
+#define ROW1 (1 << 1)  // RB1
+#define ROW2 (1 << 2)  // RB2
+#define ROW3 (1 << 3)  // RB3
+```
+
+#### Keypad Layout
+
+The keypad matrix follows this layout:
+
+```
+  COL0  COL1  COL2  COL3
+   |     |     |     |
+ROW0 - 1     2     3     A
+ROW1 - 4     5     6     B
+ROW2 - 7     8     9     C
+ROW3 - *     0     #     D
+```
+
+<Warning>
+  Port B requires **pull-up resistors** on the column pins (RB4-RB7) for proper keypad operation. Use 10kΩ resistors.
+</Warning>
+
+### Pin Assignment Summary
+
+| Component | Port | Pins | Direction | Notes |
+|-----------|------|------|-----------|-------|
+| Keypad Rows | PORTB | RB0-RB3 | Input | Connected to keypad rows |
+| Keypad Columns | PORTB | RB4-RB7 | Output | Requires pull-up resistors |
+| LCD Display | Varies | Multiple | Bidirectional | Controlled via hdm64gs12 library |
+
+## HDM64GS12 LCD Display
+
+### Display Specifications
+
+- **Resolution:** 128 x 64 pixels
+- **Controller:** KS0108/KS0107 compatible
+- **Interface:** Parallel 8-bit data bus
+- **Backlight:** Optional LED backlight
+- **Operating Voltage:** 5V
+
+<Note>
+  The LCD display is initialized and controlled using the `hdm64gs12.c` library. Pin connections are defined within this library file.
+</Note>
+
+### Display Features Used
+
+- Text rendering with 5x7 font (`glcd_text57()`)
+- Full screen clearing capability
+- Pixel-level graphics control
+- Multiple text positioning options
+
+## Power Requirements
+
+### Voltage Specifications
+
+<CardGroup cols={2}>
+  <Card title="Microcontroller">
+    **Voltage:** 5.0V DC  
+    **Current:** ~50mA typical
+  </Card>
+  
+  <Card title="LCD Display">
+    **Voltage:** 5.0V DC  
+    **Current:** ~20mA (without backlight)  
+    **Current:** ~100mA (with backlight)
+  </Card>
+</CardGroup>
+
+### Recommended Power Supply
+
+- **Output Voltage:** 5V DC regulated
+- **Minimum Current:** 200mA
+- **Recommended Current:** 500mA (for safety margin)
+- **Regulation:** ±5% maximum ripple
+
+<Warning>
+  Ensure proper decoupling capacitors (0.1µF ceramic) are placed near the VDD pins of the microcontroller and LCD display.
+</Warning>
+
+## Assembly Checklist
+
+Before proceeding to software setup, verify you have:
+
+- [ ] PIC18F4550 microcontroller (40-pin DIP)
+- [ ] HDM64GS12 or compatible 128x64 graphical LCD
+- [ ] 4x4 matrix keypad
+- [ ] 8MHz crystal oscillator with two 22pF capacitors
+- [ ] 10kΩ pull-up resistors (x4) for keypad columns
+- [ ] 0.1µF decoupling capacitors (x2 minimum)
+- [ ] 5V regulated power supply
+- [ ] Development board or breadboard
+- [ ] Connecting wires
+
+## Next Steps
+
+Once you have gathered all hardware components and understand the pin connections, proceed to [Software Setup](/software-setup) to configure your development environment.

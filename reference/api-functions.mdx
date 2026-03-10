@@ -1,0 +1,868 @@
+---
+title: 'API Functions Reference'
+description: 'Complete API documentation for all public functions in the Number Base Converter'
+icon: 'code'
+---
+
+## Input/Output Functions
+
+<Accordion title="readInput - Read numeric input from keypad">
+
+### Function Signature
+
+```c
+void readInput(char *input, int maxLength)
+```
+
+### Description
+
+Reads numeric input from the 4×4 matrix keypad and displays characters on the LCD as they are entered. Input terminates when the '#' key is pressed or maximum length is reached.
+
+### Parameters
+
+<ParamField path="input" type="char*" required>
+  Pointer to character array where input will be stored. Must be pre-allocated with size ≥ maxLength.
+</ParamField>
+
+<ParamField path="maxLength" type="int" required>
+  Maximum number of characters to read, including null terminator. Function will stop at (maxLength - 1) characters.
+</ParamField>
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  No return value. Input is stored in the provided buffer and null-terminated.
+</ResponseField>
+
+### Algorithm
+
+1. Initialize index to 0
+2. Loop while index < maxLength - 1:
+   - Call `kbd_getc()` to read a key
+   - If key is '#', break (end input)
+   - If key is numeric ('0'-'9'), add to buffer and display on LCD
+   - Increment index
+3. Null-terminate the string
+
+### Implementation Details
+
+```c
+void readInput(char *input, int maxLength) {
+    char key;
+    int index = 0;
+    while (index < maxLength - 1) {
+        key = kbd_getc();
+        if (key != 0) {
+            if (key == '#') { // '#' ends input
+                break;
+            }
+            if (key >= '0' && key <= '9') { // Only accept numeric characters
+                input[index++] = key;
+                glcd_text57(4 + (index * 6), 32, &key, 1, on); // Display character
+            }
+        }
+    }
+    input[index] = '\0'; // Null-terminate
+}
+```
+
+### Usage Example
+
+From `decToBinOctHex()` function:
+
+```c
+char input[20];
+const char *text1 = "Ingrese Decimal:";
+
+glcd_text57(4, 16, text1, 1, on);
+readInput(input, 20);  // Read up to 19 digits + null terminator
+
+int numEnt = atoi(input); // Convert string to integer
+```
+
+<Note>
+  Only numeric keys ('0'-'9') are accepted. Hexadecimal keys (A-D) and '*' are ignored. The '#' key serves as the enter/submit key.
+</Note>
+
+</Accordion>
+
+---
+
+## Decimal Conversion Functions
+
+<Accordion title="decimal_binary - Convert decimal to binary">
+
+### Function Signature
+
+```c
+void decimal_binary(int num, char bin[])
+```
+
+### Description
+
+Converts a decimal integer to its binary string representation using the division-by-2 method.
+
+### Parameters
+
+<ParamField path="num" type="int" required>
+  Decimal number to convert (0 to 65535 for 16-bit int)
+</ParamField>
+
+<ParamField path="bin" type="char[]" required>
+  Output buffer for binary string. Must be at least 17 bytes (16 bits + null terminator)
+</ParamField>
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  Result stored in bin array as null-terminated string
+</ResponseField>
+
+### Algorithm
+
+1. Handle special case: if num == 0, return "0"
+2. While num > 0:
+   - Calculate remainder: num % 2
+   - Store remainder + '0' in temporary array
+   - Divide num by 2
+3. Reverse temporary array into output buffer
+4. Null-terminate the string
+
+### Implementation
+
+```c
+void decimal_binary(int num, char bin[]) {
+    int i = 0;
+    int j;
+    char temp[20];
+    
+    if (num == 0) {
+        bin[0] = '0';
+        bin[1] = '\0';
+        return;
+    }
+    
+    while (num > 0) {
+        temp[i] = (num % 2) + '0';
+        num = num / 2;
+        i++;
+    }
+    
+    // Reverse array to get correct binary
+    for (j = 0; j < i; j++) {
+        bin[j] = temp[i - j - 1];
+    }
+    bin[i] = '\0';
+}
+```
+
+### Usage Example
+
+```c
+int numEnt = 42;
+char bin[20];
+
+decimal_binary(numEnt, bin);
+// bin now contains "101010"
+
+glcd_text57(4, 16, bin, 1, on); // Display on LCD
+```
+
+</Accordion>
+
+<Accordion title="decimal_octal - Convert decimal to octal">
+
+### Function Signature
+
+```c
+void decimal_octal(int num, char oct[])
+```
+
+### Description
+
+Converts a decimal integer to its octal string representation using the division-by-8 method.
+
+### Parameters
+
+<ParamField path="num" type="int" required>
+  Decimal number to convert (0 to 65535 for 16-bit int)
+</ParamField>
+
+<ParamField path="oct" type="char[]" required>
+  Output buffer for octal string. Must be at least 7 bytes (6 octal digits + null terminator)
+</ParamField>
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  Result stored in oct array as null-terminated string
+</ResponseField>
+
+### Algorithm
+
+1. Handle special case: if num == 0, return "0"
+2. While num > 0:
+   - Calculate remainder: num % 8
+   - Store remainder + '0' in temporary array
+   - Divide num by 8
+3. Reverse temporary array into output buffer
+4. Null-terminate the string
+
+### Implementation
+
+```c
+void decimal_octal(int num, char oct[]) {
+    int i = 0;
+    int j;
+    char temp[20];
+    
+    if (num == 0) {
+        oct[0] = '0';
+        oct[1] = '\0';
+        return;
+    }
+    
+    while (num > 0) {
+        temp[i] = (num % 8) + '0';
+        num = num / 8;
+        i++;
+    }
+    
+    // Reverse array to get correct octal
+    for (j = 0; j < i; j++) {
+        oct[j] = temp[i - j - 1];
+    }
+    oct[i] = '\0';
+}
+```
+
+### Usage Example
+
+```c
+int numEnt = 42;
+char oct[20];
+
+decimal_octal(numEnt, oct);
+// oct now contains "52"
+
+glcd_text57(4, 32, oct, 1, on); // Display on LCD
+```
+
+</Accordion>
+
+<Accordion title="decimal_hexadecimal - Convert decimal to hexadecimal">
+
+### Function Signature
+
+```c
+void decimal_hexadecimal(int num, char hex[])
+```
+
+### Description
+
+Converts a decimal integer to its hexadecimal string representation using the division-by-16 method with character lookup table.
+
+### Parameters
+
+<ParamField path="num" type="int" required>
+  Decimal number to convert (0 to 65535 for 16-bit int)
+</ParamField>
+
+<ParamField path="hex" type="char[]" required>
+  Output buffer for hexadecimal string. Must be at least 5 bytes (4 hex digits + null terminator)
+</ParamField>
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  Result stored in hex array as null-terminated uppercase string
+</ResponseField>
+
+### Algorithm
+
+1. Define hex character lookup table: "0123456789ABCDEF"
+2. Handle special case: if num == 0, return "0"
+3. While num > 0:
+   - Calculate remainder: num % 16
+   - Store hex_chars[remainder] in temporary array
+   - Divide num by 16
+4. Reverse temporary array into output buffer
+5. Null-terminate the string
+
+### Implementation
+
+```c
+void decimal_hexadecimal(int num, char hex[]) {
+    int i = 0;
+    int j;
+    char temp[20];
+    char hex_chars[] = "0123456789ABCDEF";
+    
+    if (num == 0) {
+        hex[0] = '0';
+        hex[1] = '\0';
+        return;
+    }
+    
+    while (num > 0) {
+        temp[i] = hex_chars[num % 16];
+        num = num / 16;
+        i++;
+    }
+    
+    // Reverse array to get correct hexadecimal
+    for (j = 0; j < i; j++) {
+        hex[j] = temp[i - j - 1];
+    }
+    hex[i] = '\0';
+}
+```
+
+### Usage Example
+
+```c
+int numEnt = 255;
+char hex[20];
+
+decimal_hexadecimal(numEnt, hex);
+// hex now contains "FF"
+
+glcd_text57(4, 48, hex, 1, on); // Display on LCD
+```
+
+<Note>
+  Hexadecimal output uses uppercase letters (A-F). The function uses a lookup table for efficient digit-to-character conversion.
+</Note>
+
+</Accordion>
+
+---
+
+## Gray Code Conversion Functions
+
+<Accordion title="binaryToGray - Convert binary to Gray code">
+
+### Function Signature
+
+```c
+void binaryToGray(char bin[], char gray[], int n)
+```
+
+### Description
+
+Converts a binary string to Gray code using XOR logic. The Gray code is a binary numeral system where two successive values differ in only one bit.
+
+### Parameters
+
+<ParamField path="bin" type="char[]" required>
+  Input binary string (containing only '0' and '1' characters)
+</ParamField>
+
+<ParamField path="gray" type="char[]" required>
+  Output buffer for Gray code string. Must be at least (n + 1) bytes.
+</ParamField>
+
+<ParamField path="n" type="int" required>
+  Length of binary string (number of bits)
+</ParamField>
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  Result stored in gray array as null-terminated string
+</ResponseField>
+
+### Algorithm
+
+1. Copy MSB (most significant bit): gray[0] = bin[0]
+2. For each remaining bit i from 1 to n-1:
+   - If bin[i] == bin[i-1], set gray[i] = '0'
+   - Otherwise, set gray[i] = '1'
+3. Null-terminate the string
+
+**Gray Code Formula**: G[i] = B[i] XOR B[i-1]
+
+### Implementation
+
+```c
+void binaryToGray(char bin[], char gray[], int n) {
+    gray[0] = bin[0]; // MSB of Gray code same as Binary
+    for (int i = 1; i < n; i++) {
+        gray[i] = (bin[i] == bin[i-1]) ? '0' : '1';
+    }
+    gray[n] = '\0'; // Null-terminate
+}
+```
+
+### Usage Example
+
+From `convertBinToGray()` function:
+
+```c
+char bin[20] = "1011";
+char gray[20];
+
+int n = strlen(bin);
+binaryToGray(bin, gray, n);
+// gray now contains "1110"
+
+glcd_text57(4, 16, gray, 1, on); // Display result
+```
+
+<Note>
+  Gray code is useful in digital communications and mechanical position encoders because only one bit changes between consecutive values, reducing errors.
+</Note>
+
+</Accordion>
+
+<Accordion title="grayToBinary - Convert Gray code to binary">
+
+### Function Signature
+
+```c
+void grayToBinary(char gray[], char bin[], int n)
+```
+
+### Description
+
+Converts a Gray code string back to binary using cumulative XOR logic.
+
+### Parameters
+
+<ParamField path="gray" type="char[]" required>
+  Input Gray code string (containing only '0' and '1' characters)
+</ParamField>
+
+<ParamField path="bin" type="char[]" required>
+  Output buffer for binary string. Must be at least (n + 1) bytes.
+</ParamField>
+
+<ParamField path="n" type="int" required>
+  Length of Gray code string (number of bits)
+</ParamField>
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  Result stored in bin array as null-terminated string
+</ResponseField>
+
+### Algorithm
+
+1. Copy MSB: bin[0] = gray[0]
+2. For each remaining bit i from 1 to n-1:
+   - If gray[i] == '0', bin[i] = bin[i-1] (copy previous)
+   - Otherwise, bin[i] = NOT bin[i-1] (flip previous)
+3. Null-terminate the string
+
+**Binary Formula**: B[i] = G[i] XOR B[i-1]
+
+### Implementation
+
+```c
+void grayToBinary(char gray[], char bin[], int n) {
+    bin[0] = gray[0]; // MSB of Binary same as Gray
+    for (int i = 1; i < n; i++) {
+        bin[i] = (gray[i] == '0') ? bin[i-1] : (bin[i-1] == '0' ? '1' : '0');
+    }
+    bin[n] = '\0'; // Null-terminate
+}
+```
+
+### Usage Example
+
+From `convertGrayToBin()` function:
+
+```c
+char gray[20] = "1110";
+char bin[20];
+
+int n = strlen(gray);
+grayToBinary(gray, bin, n);
+// bin now contains "1011"
+
+glcd_text57(4, 16, bin, 1, on); // Display result
+```
+
+</Accordion>
+
+---
+
+## High-Level Conversion Functions
+
+<Accordion title="decToBinOctHex - Decimal to all bases">
+
+### Function Signature
+
+```c
+void decToBinOctHex()
+```
+
+### Description
+
+Complete workflow function that prompts user for decimal input and displays conversions to binary, octal, and hexadecimal.
+
+### Parameters
+
+None (uses global LCD interface and keypad)
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  No return value. Results displayed on LCD.
+</ResponseField>
+
+### Algorithm
+
+1. Display "Ingrese Decimal:" prompt
+2. Call `readInput()` to get user input
+3. Convert input string to integer using `atoi()`
+4. Call conversion functions:
+   - `decimal_binary()` for binary
+   - `decimal_octal()` for octal  
+   - `decimal_hexadecimal()` for hexadecimal
+5. Clear screen and display all results with delays
+
+### Implementation
+
+```c
+void decToBinOctHex(){
+    char input[20];
+    char bin[20], oct[20], hex[20];
+    const char *text1 = "Ingrese Decimal:";
+    const char *text2 = "Binario:";
+    const char *text3 = "Octal:";
+    const char *text4 = "Hexadecimal:";
+    
+    glcd_text57(4, 16, text1, 1, on);
+    readInput(input, 20);
+    
+    int numEnt = atoi(input);
+    
+    decimal_binary(numEnt, bin);
+    decimal_octal(numEnt, oct);
+    decimal_hexadecimal(numEnt, hex);
+    
+    glcd_fillscreen(0);
+    
+    glcd_text57(4, 8, text2, 1, on);
+    glcd_text57(4, 16, bin, 1, on);
+    delay_ms(1000);
+    
+    glcd_text57(4, 24, text3, 1, on);
+    glcd_text57(4, 32, oct, 1, on);
+    delay_ms(1000);
+    
+    glcd_text57(4, 40, text4, 1, on);
+    glcd_text57(4, 48, hex, 1, on);
+    delay_ms(1000);
+}
+```
+
+### Usage Example
+
+Called from main menu:
+
+```c
+case 1:
+    glcd_fillscreen(0);
+    glcd_text57(4,4,textDec,1,on);
+    decToBinOctHex();
+    delay_ms(1000);
+    break;
+```
+
+</Accordion>
+
+<Accordion title="convertBinToGray - Binary to Gray code workflow">
+
+### Function Signature
+
+```c
+void convertBinToGray()
+```
+
+### Description
+
+Complete workflow function that prompts user for binary input and displays Gray code conversion.
+
+### Parameters
+
+None (uses global LCD interface and keypad)
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  No return value. Result displayed on LCD.
+</ResponseField>
+
+### Algorithm
+
+1. Display "Ingrese Binario:" prompt
+2. Call `readInput()` to get binary string
+3. Calculate string length using `strlen()`
+4. Call `binaryToGray()` to perform conversion
+5. Clear screen and display result
+
+### Implementation
+
+```c
+void convertBinToGray() {
+    char bin[20], gray[20];
+    const char *text1 = "Ingrese Binario:";
+    const char *text2 = "Gray Code:";
+    
+    glcd_text57(4, 16, text1, 1, on);
+    readInput(bin, 20);
+    
+    int n = strlen(bin);
+    binaryToGray(bin, gray, n);
+    
+    glcd_fillscreen(0);
+    glcd_text57(4, 8, text2, 1, on);
+    glcd_text57(4, 16, gray, 1, on);
+}
+```
+
+### Usage Example
+
+Called from main menu:
+
+```c
+case 2:
+    glcd_fillscreen(0);
+    glcd_text57(4, 4, textBin, 1, on);
+    convertBinToGray();
+    delay_ms(1000);
+    break;
+```
+
+</Accordion>
+
+<Accordion title="convertGrayToBin - Gray code to binary workflow">
+
+### Function Signature
+
+```c
+void convertGrayToBin()
+```
+
+### Description
+
+Complete workflow function that prompts user for Gray code input and displays binary conversion.
+
+### Parameters
+
+None (uses global LCD interface and keypad)
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  No return value. Result displayed on LCD.
+</ResponseField>
+
+### Algorithm
+
+1. Display "Ingrese Gray:" prompt
+2. Call `readInput()` to get Gray code string
+3. Calculate string length using `strlen()`
+4. Call `grayToBinary()` to perform conversion
+5. Clear screen and display result
+
+### Implementation
+
+```c
+void convertGrayToBin() {
+    char gray[20], bin[20];
+    const char *text3 = "Ingrese Gray:";
+    const char *text4 = "Binary Code:";
+    
+    glcd_text57(4, 16, text3, 1, on);
+    readInput(gray, 20);
+    
+    int n = strlen(gray);
+    grayToBinary(gray, bin, n);
+    
+    glcd_fillscreen(0);
+    glcd_text57(4, 8, text4, 1, on);
+    glcd_text57(4, 16, bin, 1, on);
+}
+```
+
+### Usage Example
+
+Called from main menu:
+
+```c
+case 3:
+    glcd_fillscreen(0);
+    glcd_text57(4,4,textGray,1,on);
+    convertGrayToBin();
+    delay_ms(1000);
+    break;
+```
+
+</Accordion>
+
+---
+
+## Keypad Driver Functions
+
+<Accordion title="kbd_init - Initialize keypad">
+
+### Function Signature
+
+```c
+void kbd_init()
+```
+
+### Description
+
+Initializes the 4×4 matrix keypad interface. Currently a placeholder function as initialization is handled by port configuration.
+
+### Parameters
+
+None
+
+### Return Value
+
+<ResponseField name="Return" type="void">
+  No return value.
+</ResponseField>
+
+### Implementation
+
+```c
+void kbd_init() {
+    // Placeholder - actual initialization handled by driver
+}
+```
+
+### Usage Example
+
+Called once at program start:
+
+```c
+void main(){
+    kbd_init();     // Initialize keypad
+    glcd_init(on);  // Initialize LCD
+    // ... rest of program
+}
+```
+
+</Accordion>
+
+<Accordion title="kbd_getc - Read keypad character">
+
+### Function Signature
+
+```c
+char kbd_getc()
+```
+
+### Description
+
+Scans the 4×4 matrix keypad and returns the pressed key character. Uses column-scanning with debounce logic. Returns '\0' if no key is pressed.
+
+### Parameters
+
+None
+
+### Return Value
+
+<ResponseField name="Return" type="char">
+  Character of pressed key ('0'-'9', 'A'-'D', '*', '#'), or '\0' if no key pressed
+</ResponseField>
+
+### Algorithm
+
+1. Maintain static variables for state tracking:
+   - `kbd_call_count`: Debounce counter
+   - `kbd_down`: Key pressed flag
+   - `last_key`: Last detected key
+   - `col`: Current column being scanned
+2. Increment call count for debouncing
+3. When debounce threshold reached:
+   - Set current column pin LOW, others HIGH
+   - Read row pins
+   - If key down and rows all HIGH: key released, return character
+   - If key not down and any row LOW: key pressed, save character
+   - Advance to next column
+4. Return key character or '\0'
+
+### Implementation Details
+
+```c
+char kbd_getc( ) {
+    static BYTE kbd_call_count;
+    static int1 kbd_down;
+    static char last_key;
+    static BYTE col;
+
+    BYTE kchar;
+    BYTE row;
+
+    kchar='\0';
+    if(++kbd_call_count>KBD_DEBOUNCE_FACTOR) {
+        switch (col) {
+          case 0: set_tris_kbd(ALL_PINS&~COL0);
+                  kbd=~COL0&ALL_PINS;
+                  break;
+          case 1: set_tris_kbd(ALL_PINS&~COL1);
+                  kbd=~COL1&ALL_PINS;
+                  break;
+          case 2: set_tris_kbd(ALL_PINS&~COL2);
+                  kbd=~COL2&ALL_PINS;
+                  break;
+          case 3: set_tris_kbd(ALL_PINS&~COL3);
+                  kbd=~COL3&ALL_PINS;
+                  break;
+        }
+
+        if(kbd_down) {
+          if((kbd & (ALL_ROWS))==(ALL_ROWS)) {
+            kbd_down=FALSE;
+            kchar=last_key;
+            last_key='\0';
+          }
+        } else {
+           if((kbd & (ALL_ROWS))!=(ALL_ROWS)) {
+              if((kbd & ROW0)==0)
+                row=0;
+              else if((kbd & ROW1)==0)
+                row=1;
+              else if((kbd & ROW2)==0)
+                row=2;
+              else if((kbd & ROW3)==0)
+                row=3;
+              last_key =KEYS[row][col];
+              kbd_down = TRUE;
+           } else {
+              ++col;
+              if(col==4)
+                col=0;
+           }
+        }
+       kbd_call_count=0;
+    }
+   set_tris_kbd(ALL_PINS);
+   return(kchar);
+}
+```
+
+### Usage Example
+
+```c
+char choice = 0;
+do{
+    choice = kbd_getc();
+} while(choice==0);  // Wait for key press
+
+int val = choice - 48;  // Convert ASCII to number
+```
+
+<Note>
+  This function must be called frequently (polling) to detect key presses. The debounce factor of 33 assumes the function is called approximately 330 times per second.
+</Note>
+
+</Accordion>
