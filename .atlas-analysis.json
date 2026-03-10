@@ -1,0 +1,62 @@
+{
+  "projectType": "general",
+  "projectName": "Number Base Converter",
+  "projectDescription": "Embedded firmware for converting between decimal, binary, octal, hexadecimal, and Gray code using PIC18F4550 microcontroller with LCD display and keypad interface",
+  "theme": "aspen",
+  "primaryColor": "#2563eb",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "hardware-requirements",
+          "software-setup"
+        ]
+      },
+      {
+        "group": "User Guide",
+        "pages": [
+          "user-guide/operation",
+          "user-guide/keypad-interface",
+          "user-guide/conversions"
+        ]
+      },
+      {
+        "group": "Technical Reference",
+        "pages": [
+          "reference/hardware-specifications",
+          "reference/api-functions",
+          "reference/circuit-design"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/building",
+          "development/proteus-simulation",
+          "development/troubleshooting"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Decimal to Binary, Octal, and Hexadecimal conversion",
+    "Binary to Gray code conversion",
+    "Gray code to Binary conversion",
+    "4x4 matrix keypad input interface",
+    "Graphical LCD display output",
+    "Real-time conversion and display"
+  ],
+  "publicApiSurface": [
+    "decimal_binary()",
+    "decimal_octal()",
+    "decimal_hexadecimal()",
+    "binaryToGray()",
+    "grayToBinary()",
+    "kbd_getc()",
+    "readInput()"
+  ]
+}
